@@ -29,7 +29,7 @@ Soundeffekte erscheinen als große, schnell erreichbare Tasten. Jeder Tap spielt
 
 ## Library
 
-Die Library verwaltet alle lokal vorhandenen Audiodateien. Es können mehrere Audiodateien oder einzelne Paper-Bard-Dateien vom Gerät importiert werden.
+Die Library verwaltet alle lokal vorhandenen Audiodateien. Es können mehrere Audiodateien oder einzelne `.paperbard`-Dateien vom Gerät importiert werden.
 
 Jeder Eintrag besitzt:
 
@@ -43,7 +43,7 @@ Jeder Eintrag besitzt:
 
 Einträge können bearbeitet und gelöscht werden. Mögliche Tag-Vorschläge sind `combat`, `forest`, `city`, `dungeon`, `horror`, `tavern` und `weather`.
 
-Jeder Eintrag lässt sich entweder als Audiodatei oder als `.paper-bard`-Datei laden. Die Paper-Bard-Datei enthält die Audiodatei und die Metadaten des Eintrags und kann später als neuer Eintrag wieder importiert werden.
+Jeder Eintrag lässt sich entweder als Audiodatei oder als `.paperbard`-Datei laden. Die Paper-Bard-Datei enthält die Audiodatei und die Metadaten des Eintrags und kann später als neuer Eintrag wieder importiert werden.
 
 ## Aufnahme
 
@@ -66,8 +66,8 @@ Für das MVP stehen zur Verfügung:
 - Standard-Fade-Dauer
 - Anzeige des lokalen Speicherverbrauchs
 - vollständiges Löschen der Library nach Bestätigung
-- Export aller lokalen Daten in eine Backup-Datei
-- Import einer Backup-Datei nach Prüfung und Bestätigung
+- Export aller lokalen Daten in eine `.paperbard`-Backup-Datei
+- Import einer `.paperbard`-Backup-Datei nach Prüfung und Bestätigung
 
 ## Qualitätsziele
 

@@ -48,6 +48,6 @@ describe('Backup', () => {
 
   it('erstellt sichere Download-Dateinamen', () => {
     expect(audioDownloadName({ name: 'Wald / Nacht', mimeType: 'audio/mpeg' })).toBe('Wald - Nacht.mp3')
-    expect(itemArchiveDownloadName({ name: 'Wald / Nacht' })).toBe('Wald - Nacht.paper-bard')
+    expect(itemArchiveDownloadName({ name: 'Wald / Nacht' })).toBe('Wald - Nacht.paperbard')
   })
 })

@@ -55,12 +55,12 @@ describe('LibraryView', () => {
     fireEvent.click(within(menu).getByRole('button', { name: 'Audiodatei laden' }))
     fireEvent.click(within(menu).getByRole('button', { name: 'Als Paper Bard Datei laden' }))
 
-    await waitFor(() => expect(downloads).toEqual(['Wald - Nacht.mp3', 'Wald - Nacht.paper-bard']))
+    await waitFor(() => expect(downloads).toEqual(['Wald - Nacht.mp3', 'Wald - Nacht.paperbard']))
     click.mockRestore()
   })
 
   it('importiert Paper-Bard-Dateien als Kopie mit neuer ID', async () => {
-    const archive = Object.assign(await createItemArchive(item), { name: 'wald.paper-bard' }) as File
+    const archive = Object.assign(await createItemArchive(item), { name: 'wald.paperbard' }) as File
     vi.spyOn(crypto, 'randomUUID').mockReturnValue('forest-copy')
     const { container } = render(<LibraryView />)
     const input = container.querySelector('input[type="file"]')!
@@ -73,12 +73,12 @@ describe('LibraryView', () => {
   it('speichert keine ungültige Paper-Bard-Datei', async () => {
     const invalidArchive = Object.assign(new Blob([zipSync({
       'manifest.json': strToU8(JSON.stringify({ schemaVersion: 1, kind: 'audio-item', item: {} })),
-    })]), { name: 'defekt.paper-bard' }) as File
+    })]), { name: 'defekt.paperbard' }) as File
     const { container } = render(<LibraryView />)
     const input = container.querySelector('input[type="file"]')!
     fireEvent.change(input, { target: { files: [invalidArchive] } })
 
-    await waitFor(() => expect(app.setMessage).toHaveBeenCalledWith(expect.stringContaining('defekt.paper-bard')))
+    await waitFor(() => expect(app.setMessage).toHaveBeenCalledWith(expect.stringContaining('defekt.paperbard')))
     expect(app.addItem).not.toHaveBeenCalled()
   })
 })

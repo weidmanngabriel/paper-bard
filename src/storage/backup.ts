@@ -66,7 +66,7 @@ export function audioDownloadName(item: Pick<AudioItem, 'name' | 'mimeType'>): s
 }
 
 export function itemArchiveDownloadName(item: Pick<AudioItem, 'name'>): string {
-  return `${safeFileStem(item.name)}.paper-bard`
+  return `${safeFileStem(item.name)}.paperbard`
 }
 
 function isAudioType(value: unknown): value is AudioType {

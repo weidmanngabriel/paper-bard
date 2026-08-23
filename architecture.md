@@ -56,9 +56,9 @@ Importe werden vor dem Speichern über ein temporäres Audioelement geprüft. Ni
 
 MediaRecorder wählt zur Laufzeit den ersten unterstützten MIME-Typ aus MP4/AAC und WebM/Opus. Nach dem Stop wird der Blob über eine Objekt-URL vorgehört und erst nach Bestätigung gespeichert.
 
-Ein ZIP-Backup enthält `manifest.json` mit `schemaVersion: 1`, Einstellungen, Metadaten und getrennte Dateien unter `audio/`. Beim Import wird das gesamte Archiv geprüft. Erst danach ersetzt eine IndexedDB-Transaktion Library und Einstellungen. Bei einem Fehler bleiben vorhandene Daten unverändert.
+Ein vollständiges `.paperbard`-Backup ist intern ein ZIP und enthält `manifest.json` mit `schemaVersion: 1`, Einstellungen, Metadaten und getrennte Dateien unter `audio/`. Der Import in den Einstellungen prüft das gesamte Archiv. Erst danach ersetzt eine IndexedDB-Transaktion Library und Einstellungen. Bei einem Fehler bleiben vorhandene Daten unverändert. Ältere `.zip`-Backups bleiben importierbar.
 
-Einzelne Einträge lassen sich zusätzlich als `.paper-bard` laden. Dieses ZIP enthält ein Manifest mit `schemaVersion: 1`, der Kennzeichnung `kind: "audio-item"`, allen Eintrags-Metadaten und einer Audiodatei unter `audio/`. Der Library-Import validiert das Archiv vollständig und legt den Eintrag mit einer neuen ID an; vorhandene Library-Daten und Einstellungen bleiben dabei unverändert.
+Einzelne Einträge lassen sich zusätzlich als `.paperbard` laden. Dieses ZIP enthält ein Manifest mit `schemaVersion: 1`, der Kennzeichnung `kind: "audio-item"`, allen Eintrags-Metadaten und einer Audiodatei unter `audio/`. Der Library-Import validiert das Archiv vollständig und legt den Eintrag mit einer neuen ID an; vorhandene Library-Daten und Einstellungen bleiben dabei unverändert. Die bisherige Endung `.paper-bard` bleibt für den Einzelimport lesbar.
 
 ## PWA und Deployment
 

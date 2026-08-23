@@ -19,7 +19,8 @@ function triggerDownload(blob: Blob, fileName: string) {
 }
 
 function isItemArchive(file: File): boolean {
-  return file.name.toLowerCase().endsWith('.paper-bard')
+  const name = file.name.toLowerCase()
+  return name.endsWith('.paperbard') || name.endsWith('.paper-bard')
 }
 
 export function LibraryView() {
@@ -106,9 +107,9 @@ export function LibraryView() {
   return (
     <main className="page">
       <section className="hero compact-hero">
-        <div><p className="eyebrow">Deine Sammlung</p><h1>Library</h1><p>Alles, was deine Geschichten hörbar macht.</p></div>
+        <div><p className="eyebrow">Deine Sammlung</p><h1>Library</h1><p>Alles, was deine Geschichten hörbar macht. Importiere Audio oder `.paperbard`-Dateien.</p></div>
         <button className="button primary" disabled={busy} onClick={() => inputRef.current?.click()}><Upload /> {busy ? 'Prüfe …' : 'Importieren'}</button>
-        <input ref={inputRef} className="visually-hidden" type="file" accept="audio/*,.paper-bard" multiple onChange={(event) => { void selectFiles(event.target.files) }} />
+        <input ref={inputRef} className="visually-hidden" type="file" accept="audio/*,.paperbard,.paper-bard" multiple onChange={(event) => { void selectFiles(event.target.files) }} />
       </section>
 
       {items.length === 0 ? (
@@ -117,7 +118,7 @@ export function LibraryView() {
           <h2>Deine Bühne ist leer</h2>
           <p>Importiere mehrere Audiodateien oder nimm deinen ersten Effekt auf.</p>
           <div className="empty-actions">
-            <button className="button primary" onClick={() => inputRef.current?.click()}><Plus /> Audio importieren</button>
+            <button className="button primary" onClick={() => inputRef.current?.click()}><Plus /> Audio oder .paperbard importieren</button>
             <button className="button secondary" onClick={() => { window.location.hash = '/record' }}>Etwas aufnehmen</button>
           </div>
         </section>

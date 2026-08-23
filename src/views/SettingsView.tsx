@@ -25,7 +25,7 @@ export function SettingsView() {
       const url = URL.createObjectURL(blob)
       const anchor = document.createElement('a')
       anchor.href = url
-      anchor.download = `paper-bard-backup-${new Date().toISOString().slice(0, 10)}.zip`
+      anchor.download = `paper-bard-backup-${new Date().toISOString().slice(0, 10)}.paperbard`
       anchor.click()
       window.setTimeout(() => URL.revokeObjectURL(url), 1000)
       setMessage('Backup wurde erstellt.')
@@ -84,9 +84,9 @@ export function SettingsView() {
       <section className="settings-section">
         <h2>Backup</h2>
         <div className="settings-card button-stack">
-          <button className="settings-action" disabled={busy} onClick={() => { void download() }}><span className="section-icon"><Download /></span><span><strong>Daten exportieren</strong><small>Library und Einstellungen als ZIP sichern</small></span></button>
-          <button className="settings-action" disabled={busy} onClick={() => importRef.current?.click()}><span className="section-icon"><Upload /></span><span><strong>Daten importieren</strong><small>Vorhandene Daten aus einem Backup ersetzen</small></span></button>
-          <input ref={importRef} className="visually-hidden" type="file" accept=".zip,application/zip" onChange={(event) => { void importBackup(event.target.files?.[0]) }} />
+          <button className="settings-action" disabled={busy} onClick={() => { void download() }}><span className="section-icon"><Download /></span><span><strong>Daten exportieren</strong><small>Library und Einstellungen als .paperbard sichern</small></span></button>
+          <button className="settings-action" disabled={busy} onClick={() => importRef.current?.click()}><span className="section-icon"><Upload /></span><span><strong>.paperbard importieren</strong><small>Vorhandene Library und Einstellungen ersetzen</small></span></button>
+          <input ref={importRef} className="visually-hidden" type="file" accept=".paperbard,.zip,application/zip" onChange={(event) => { void importBackup(event.target.files?.[0]) }} />
         </div>
       </section>
 
