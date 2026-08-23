@@ -59,17 +59,6 @@ export async function clearLibrary(): Promise<void> {
   await db.clear('audioItems')
 }
 
-export async function replaceAllData(items: AudioItem[], settings: AppSettings): Promise<void> {
-  const db = await database()
-  const transaction = db.transaction(['audioItems', 'settings'], 'readwrite')
-  await transaction.objectStore('audioItems').clear()
-  for (const item of items) {
-    await transaction.objectStore('audioItems').put(item)
-  }
-  await transaction.objectStore('settings').put(settings, 'app')
-  await transaction.done
-}
-
 export async function storageEstimate(): Promise<{ usage: number; quota: number }> {
   const estimate = await navigator.storage?.estimate?.()
   return { usage: estimate?.usage ?? 0, quota: estimate?.quota ?? 0 }

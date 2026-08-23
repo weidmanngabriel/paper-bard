@@ -7,7 +7,6 @@ import {
   deleteAudioItem,
   getAllAudioItems,
   getSettings,
-  replaceAllData,
   saveAudioItem,
   saveSettings,
 } from '../storage/database'
@@ -24,7 +23,6 @@ interface AppContextValue {
   removeItem: (id: string) => Promise<void>
   updateSettings: (settings: AppSettings) => Promise<void>
   removeAll: () => Promise<void>
-  restore: (items: AudioItem[], settings: AppSettings) => Promise<void>
 }
 
 const AppContext = createContext<AppContextValue | null>(null)
@@ -81,13 +79,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
       await engine.stopAll()
       await clearLibrary()
       setItems([])
-    },
-    restore: async (nextItems, nextSettings) => {
-      await engine.stopAll()
-      await replaceAllData(nextItems, nextSettings)
-      setItems(nextItems)
-      setSettings(nextSettings)
-      engine.setDefaults(nextSettings.masterVolume, nextSettings.fadeDurationMs)
     },
   }), [engine, items, loading, message, settings])
 

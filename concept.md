@@ -58,7 +58,7 @@ Neue Audiodateien können direkt über das Mikrofon aufgenommen werden:
 
 Eine Aufnahme wird anschließend genauso behandelt wie eine importierte Datei.
 
-## Einstellungen und Datensicherung
+## Einstellungen
 
 Für das MVP stehen zur Verfügung:
 
@@ -66,8 +66,6 @@ Für das MVP stehen zur Verfügung:
 - Standard-Fade-Dauer
 - Anzeige des lokalen Speicherverbrauchs
 - vollständiges Löschen der Library nach Bestätigung
-- Export aller lokalen Daten in eine `.paperbard`-Backup-Datei
-- Import einer `.paperbard`-Backup-Datei nach Prüfung und Bestätigung
 
 ## Qualitätsziele
 

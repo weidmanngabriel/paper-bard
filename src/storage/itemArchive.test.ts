@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { audioDownloadName, createBackup, createItemArchive, itemArchiveDownloadName, parseBackup, parseItemArchive } from './backup'
+import { audioDownloadName, createItemArchive, itemArchiveDownloadName, parseItemArchive } from './itemArchive'
 import type { AudioItem } from '../domain/types'
-import { DEFAULT_SETTINGS } from '../domain/types'
 
 function item(): AudioItem {
   return {
@@ -21,20 +20,7 @@ function item(): AudioItem {
   }
 }
 
-describe('Backup', () => {
-  it('erhält Metadaten, Einstellungen und Audiodaten', async () => {
-    const backup = await createBackup([item()], DEFAULT_SETTINGS)
-    const restored = await parseBackup(backup)
-    expect(restored.settings).toEqual(DEFAULT_SETTINGS)
-    expect(restored.items).toHaveLength(1)
-    expect(restored.items[0]).toMatchObject({ id: 'forest-1', name: 'Wald bei Nacht', loop: true, tags: ['forest', 'night'] })
-    expect(Array.from(new Uint8Array(await restored.items[0].audioBlob.arrayBuffer()))).toEqual([1, 2, 3, 4])
-  })
-
-  it('lehnt ungültige Archive verständlich ab', async () => {
-    await expect(parseBackup(new Blob(['kein zip']))).rejects.toThrow('kein gültiges Paper-Bard-Backup')
-  })
-
+describe('Paper-Bard-Einzeldatei', () => {
   it('exportiert einen einzelnen Eintrag mit Metadaten und Audiodaten', async () => {
     const archive = await createItemArchive(item())
     const restored = await parseItemArchive(archive)

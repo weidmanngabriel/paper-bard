@@ -1,53 +1,18 @@
-import { useEffect, useRef, useState } from 'react'
-import { Download, HardDrive, Info, RotateCcw, Trash2, Upload } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { HardDrive, Info, RotateCcw, Trash2 } from 'lucide-react'
 import { useApp } from '../app/AppContext'
-import { createBackup, parseBackup } from '../storage/backup'
 import { storageEstimate } from '../storage/database'
 import { errorMessage, formatBytes } from '../app/format'
 
 export function SettingsView() {
-  const { items, settings, updateSettings, removeAll, restore, setMessage } = useApp()
+  const { items, settings, updateSettings, removeAll, setMessage } = useApp()
   const [estimate, setEstimate] = useState({ usage: 0, quota: 0 })
-  const [busy, setBusy] = useState(false)
-  const importRef = useRef<HTMLInputElement>(null)
 
   const refreshEstimate = () => { void storageEstimate().then(setEstimate).catch(() => undefined) }
   useEffect(refreshEstimate, [items])
 
   const change = (partial: Partial<typeof settings>) => {
     void updateSettings({ ...settings, ...partial }).catch((error) => setMessage(errorMessage(error)))
-  }
-
-  const download = async () => {
-    setBusy(true)
-    try {
-      const blob = await createBackup(items, settings)
-      const url = URL.createObjectURL(blob)
-      const anchor = document.createElement('a')
-      anchor.href = url
-      anchor.download = `paper-bard-backup-${new Date().toISOString().slice(0, 10)}.paperbard`
-      anchor.click()
-      window.setTimeout(() => URL.revokeObjectURL(url), 1000)
-      setMessage('Backup wurde erstellt.')
-    } catch (error) {
-      setMessage(errorMessage(error))
-    } finally { setBusy(false) }
-  }
-
-  const importBackup = async (file?: File) => {
-    if (!file) return
-    setBusy(true)
-    try {
-      const parsed = await parseBackup(file)
-      if (!window.confirm(`Das Backup enthält ${parsed.items.length} Einträge und ersetzt alle vorhandenen Daten. Fortfahren?`)) return
-      await restore(parsed.items, parsed.settings)
-      setMessage('Backup erfolgreich wiederhergestellt.')
-    } catch (error) {
-      setMessage(errorMessage(error))
-    } finally {
-      setBusy(false)
-      if (importRef.current) importRef.current.value = ''
-    }
   }
 
   const clear = async () => {
@@ -78,15 +43,6 @@ export function SettingsView() {
           <div className="storage-heading"><div className="section-icon"><HardDrive /></div><div><strong>{formatBytes(estimate.usage)} belegt</strong><span>{estimate.quota ? `von ungefähr ${formatBytes(estimate.quota)}` : 'Speicherlimit wird vom Gerät verwaltet'}</span></div></div>
           <div className="storage-bar"><span style={{ width: `${percent}%` }} /></div>
           <small>Alle Audiodateien bleiben ausschließlich auf diesem Gerät.</small>
-        </div>
-      </section>
-
-      <section className="settings-section">
-        <h2>Backup</h2>
-        <div className="settings-card button-stack">
-          <button className="settings-action" disabled={busy} onClick={() => { void download() }}><span className="section-icon"><Download /></span><span><strong>Daten exportieren</strong><small>Library und Einstellungen als .paperbard sichern</small></span></button>
-          <button className="settings-action" disabled={busy} onClick={() => importRef.current?.click()}><span className="section-icon"><Upload /></span><span><strong>.paperbard importieren</strong><small>Vorhandene Library und Einstellungen ersetzen</small></span></button>
-          <input ref={importRef} className="visually-hidden" type="file" accept=".paperbard,.zip,application/zip" onChange={(event) => { void importBackup(event.target.files?.[0]) }} />
         </div>
       </section>
 

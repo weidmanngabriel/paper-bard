@@ -3,7 +3,7 @@ import { fireEvent, render, screen, waitFor, within } from '@testing-library/rea
 import { strToU8, zipSync } from 'fflate'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { AudioItem } from '../domain/types'
-import { createItemArchive } from '../storage/backup'
+import { createItemArchive } from '../storage/itemArchive'
 import { LibraryView } from './LibraryView'
 
 const app = vi.hoisted(() => ({
@@ -63,7 +63,7 @@ describe('LibraryView', () => {
     const archive = Object.assign(await createItemArchive(item), { name: 'wald.paperbard' }) as File
     vi.spyOn(crypto, 'randomUUID').mockReturnValue('forest-copy')
     const { container } = render(<LibraryView />)
-    const input = container.querySelector('input[type="file"]')!
+    const input = container.querySelector('input[accept*=".paperbard"]')!
     fireEvent.change(input, { target: { files: [archive] } })
 
     await waitFor(() => expect(app.addItem).toHaveBeenCalledTimes(1))
@@ -75,7 +75,7 @@ describe('LibraryView', () => {
       'manifest.json': strToU8(JSON.stringify({ schemaVersion: 1, kind: 'audio-item', item: {} })),
     })]), { name: 'defekt.paperbard' }) as File
     const { container } = render(<LibraryView />)
-    const input = container.querySelector('input[type="file"]')!
+    const input = container.querySelector('input[accept*=".paperbard"]')!
     fireEvent.change(input, { target: { files: [invalidArchive] } })
 
     await waitFor(() => expect(app.setMessage).toHaveBeenCalledWith(expect.stringContaining('defekt.paperbard')))

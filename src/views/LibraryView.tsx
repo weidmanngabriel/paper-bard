@@ -4,7 +4,7 @@ import { AudioForm, formValueFor, type AudioFormValue } from '../components/Audi
 import { useApp } from '../app/AppContext'
 import { createAudioItem, type AudioItem } from '../domain/types'
 import { inspectAudioBlob } from '../domain/audioFile'
-import { audioDownloadName, createItemArchive, itemArchiveDownloadName, parseItemArchive } from '../storage/backup'
+import { audioDownloadName, createItemArchive, itemArchiveDownloadName, parseItemArchive } from '../storage/itemArchive'
 import { errorMessage, formatBytes, formatDuration } from '../app/format'
 
 interface PendingImport { file: File; durationMs: number }
@@ -25,7 +25,8 @@ function isItemArchive(file: File): boolean {
 
 export function LibraryView() {
   const { items, addItem, updateItem, removeItem, setMessage } = useApp()
-  const inputRef = useRef<HTMLInputElement>(null)
+  const audioInputRef = useRef<HTMLInputElement>(null)
+  const archiveInputRef = useRef<HTMLInputElement>(null)
   const [pending, setPending] = useState<PendingImport[]>([])
   const [editing, setEditing] = useState<AudioItem>()
   const [busy, setBusy] = useState(false)
@@ -49,7 +50,8 @@ export function LibraryView() {
     }
     setPending(accepted)
     setBusy(false)
-    if (inputRef.current) inputRef.current.value = ''
+    if (audioInputRef.current) audioInputRef.current.value = ''
+    if (archiveInputRef.current) archiveInputRef.current.value = ''
   }
 
   const current = pending[0]
@@ -107,9 +109,13 @@ export function LibraryView() {
   return (
     <main className="page">
       <section className="hero compact-hero">
-        <div><p className="eyebrow">Deine Sammlung</p><h1>Library</h1><p>Alles, was deine Geschichten hörbar macht. Importiere Audio oder `.paperbard`-Dateien.</p></div>
-        <button className="button primary" disabled={busy} onClick={() => inputRef.current?.click()}><Upload /> {busy ? 'Prüfe …' : 'Importieren'}</button>
-        <input ref={inputRef} className="visually-hidden" type="file" accept="audio/*,.paperbard,.paper-bard" multiple onChange={(event) => { void selectFiles(event.target.files) }} />
+        <div><p className="eyebrow">Deine Sammlung</p><h1>Library</h1><p>Alles, was deine Geschichten hörbar macht.</p></div>
+        <div className="hero-actions">
+          <button className="button secondary" disabled={busy} onClick={() => archiveInputRef.current?.click()}><FileArchive /> .paperbard importieren</button>
+          <button className="button primary" disabled={busy} onClick={() => audioInputRef.current?.click()}><Upload /> {busy ? 'Prüfe …' : 'Audio importieren'}</button>
+        </div>
+        <input ref={audioInputRef} className="visually-hidden" type="file" accept="audio/*" multiple onChange={(event) => { void selectFiles(event.target.files) }} />
+        <input ref={archiveInputRef} className="visually-hidden" type="file" accept=".paperbard,.paper-bard" multiple onChange={(event) => { void selectFiles(event.target.files) }} />
       </section>
 
       {items.length === 0 ? (
@@ -118,7 +124,8 @@ export function LibraryView() {
           <h2>Deine Bühne ist leer</h2>
           <p>Importiere mehrere Audiodateien oder nimm deinen ersten Effekt auf.</p>
           <div className="empty-actions">
-            <button className="button primary" onClick={() => inputRef.current?.click()}><Plus /> Audio oder .paperbard importieren</button>
+            <button className="button primary" onClick={() => audioInputRef.current?.click()}><Plus /> Audio importieren</button>
+            <button className="button secondary" onClick={() => archiveInputRef.current?.click()}><FileArchive /> .paperbard importieren</button>
             <button className="button secondary" onClick={() => { window.location.hash = '/record' }}>Etwas aufnehmen</button>
           </div>
         </section>

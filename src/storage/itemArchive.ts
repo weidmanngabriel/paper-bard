@@ -1,47 +1,17 @@
 import { strFromU8, strToU8, unzipSync, zipSync } from 'fflate'
-import type { AppSettings, AudioItem, AudioSource, AudioType } from '../domain/types'
-import { clampVolume, DEFAULT_SETTINGS } from '../domain/types'
+import type { AudioItem, AudioSource, AudioType } from '../domain/types'
+import { clampVolume } from '../domain/types'
 import { extensionForMimeType, safeFileStem } from '../domain/audioFile'
 
-interface BackupItem extends Omit<AudioItem, 'audioBlob'> {
+interface ArchivedItem extends Omit<AudioItem, 'audioBlob'> {
   audioPath: string
-}
-
-interface BackupManifest {
-  schemaVersion: 1
-  exportedAt: string
-  settings: AppSettings
-  items: BackupItem[]
 }
 
 interface ItemArchiveManifest {
   schemaVersion: 1
   kind: 'audio-item'
   exportedAt: string
-  item: BackupItem
-}
-
-export async function createBackup(items: AudioItem[], settings: AppSettings): Promise<Blob> {
-  const files: Record<string, Uint8Array> = {}
-  const manifestItems: BackupItem[] = []
-
-  for (const item of items) {
-    const audioPath = `audio/${item.id}.${extensionForMimeType(item.mimeType)}`
-    files[audioPath] = new Uint8Array(await item.audioBlob.arrayBuffer())
-    const { audioBlob: _audioBlob, ...metadata } = item
-    void _audioBlob
-    manifestItems.push({ ...metadata, audioPath })
-  }
-
-  const manifest: BackupManifest = {
-    schemaVersion: 1,
-    exportedAt: new Date().toISOString(),
-    settings,
-    items: manifestItems,
-  }
-  files['manifest.json'] = strToU8(JSON.stringify(manifest, null, 2))
-  const zipped = zipSync(files, { level: 6 })
-  return new Blob([new Uint8Array(zipped)], { type: 'application/zip' })
+  item: ArchivedItem
 }
 
 export async function createItemArchive(item: AudioItem): Promise<Blob> {
@@ -87,7 +57,7 @@ async function unzip(file: Blob, error: string): Promise<Record<string, Uint8Arr
 
 function readManifest<T>(files: Record<string, Uint8Array>, error: string): T {
   const manifestFile = files['manifest.json']
-  if (!manifestFile) throw new Error('Im Backup fehlt manifest.json.')
+  if (!manifestFile) throw new Error('In der Paper-Bard-Datei fehlt manifest.json.')
   try {
     return JSON.parse(strFromU8(manifestFile)) as T
   } catch {
@@ -95,7 +65,7 @@ function readManifest<T>(files: Record<string, Uint8Array>, error: string): T {
   }
 }
 
-function hydrateItem(entry: BackupItem, files: Record<string, Uint8Array>, error: string): AudioItem {
+function hydrateItem(entry: ArchivedItem, files: Record<string, Uint8Array>, error: string): AudioItem {
   if (
     !entry ||
     typeof entry.id !== 'string' ||
@@ -124,32 +94,6 @@ function hydrateItem(entry: BackupItem, files: Record<string, Uint8Array>, error
     tags: Array.isArray(entry.tags) ? entry.tags.filter((tag): tag is string => typeof tag === 'string') : [],
     createdAt: typeof entry.createdAt === 'string' ? entry.createdAt : new Date().toISOString(),
     source: entry.source,
-  }
-}
-
-export async function parseBackup(file: Blob): Promise<{ items: AudioItem[]; settings: AppSettings }> {
-  const files = await unzip(file, 'Die Datei ist kein gültiges Paper-Bard-Backup.')
-  const manifest = readManifest<BackupManifest>(files, 'Das Backup-Manifest ist beschädigt.')
-
-  if (!manifest || manifest.schemaVersion !== 1 || !Array.isArray(manifest.items)) {
-    throw new Error('Diese Backup-Version wird nicht unterstützt.')
-  }
-
-  const ids = new Set<string>()
-  const items = manifest.items.map((entry) => {
-    if (ids.has(entry?.id)) throw new Error('Das Backup enthält ungültige Einträge.')
-    const item = hydrateItem(entry, files, 'Das Backup enthält ungültige Einträge.')
-    ids.add(item.id)
-    return item
-  })
-
-  const settings = manifest.settings ?? DEFAULT_SETTINGS
-  return {
-    items,
-    settings: {
-      masterVolume: clampVolume(settings.masterVolume),
-      fadeDurationMs: Math.max(0, Math.min(5000, Number(settings.fadeDurationMs) || DEFAULT_SETTINGS.fadeDurationMs)),
-    },
   }
 }
 

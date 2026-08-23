@@ -8,7 +8,7 @@ Paper Bard ist eine rein clientseitige Progressive Web App auf Basis von React, 
 - React-unabhängige AudioEngine
 - IndexedDB über `idb`
 - MediaRecorder für Aufnahmen
-- ZIP-Backups über `fflate`
+- `.paperbard`-Einzelarchive über `fflate`
 - Service Worker und Manifest über `vite-plugin-pwa`
 - statisches Hosting unter `/paper-bard/` auf GitHub Pages
 - Hash-Navigation ohne serverseitige Redirects
@@ -25,7 +25,7 @@ React UI ──> Storage Layer ──> IndexedDB
 - `domain`: gemeinsame Typen, Standardwerte und Validierung
 - `storage`: versionierte IndexedDB-Zugriffe und atomare Ersetzungen
 - `audio`: AudioEngine und plattformspezifische Wiedergabe
-- `backup`: ZIP-Export und validierter Import
+- `itemArchive`: Export und validierter Import einzelner `.paperbard`-Dateien
 - `app`: React Context, Navigation und mobile Ansichten
 
 Die UI greift nicht direkt auf Browser-Audio-Nodes oder IndexedDB zu.
@@ -50,13 +50,11 @@ Die AudioEngine veröffentlicht unveränderliche Snapshots an React und bietet P
 
 Bei `visibilitychange`, `pageshow` und einer Benutzeraktion gleicht die Engine ihren Zustand mit den Browser-Elementen ab. Media Session steuert Pause/Resume All, wenn die Plattform die API unterstützt. Hintergrundwiedergabe bleibt eine Best-Effort-Funktion des Betriebssystems.
 
-## Import, Aufnahme und Backup
+## Import, Aufnahme und Einzeldatei-Export
 
 Importe werden vor dem Speichern über ein temporäres Audioelement geprüft. Nicht abspielbare Dateien und Quota-Fehler werden als verständliche Anwendungsfehler ausgegeben.
 
 MediaRecorder wählt zur Laufzeit den ersten unterstützten MIME-Typ aus MP4/AAC und WebM/Opus. Nach dem Stop wird der Blob über eine Objekt-URL vorgehört und erst nach Bestätigung gespeichert.
-
-Ein vollständiges `.paperbard`-Backup ist intern ein ZIP und enthält `manifest.json` mit `schemaVersion: 1`, Einstellungen, Metadaten und getrennte Dateien unter `audio/`. Der Import in den Einstellungen prüft das gesamte Archiv. Erst danach ersetzt eine IndexedDB-Transaktion Library und Einstellungen. Bei einem Fehler bleiben vorhandene Daten unverändert. Ältere `.zip`-Backups bleiben importierbar.
 
 Einzelne Einträge lassen sich zusätzlich als `.paperbard` laden. Dieses ZIP enthält ein Manifest mit `schemaVersion: 1`, der Kennzeichnung `kind: "audio-item"`, allen Eintrags-Metadaten und einer Audiodatei unter `audio/`. Der Library-Import validiert das Archiv vollständig und legt den Eintrag mit einer neuen ID an; vorhandene Library-Daten und Einstellungen bleiben dabei unverändert. Die bisherige Endung `.paper-bard` bleibt für den Einzelimport lesbar.
 
@@ -70,6 +68,6 @@ GitHub Actions führt Tests und den Produktionsbuild aus und veröffentlicht `di
 
 ## Prüfung
 
-Unit-Tests decken AudioEngine, parallele Instanzen, Statuswechsel und Ressourcenfreigabe ab. Storage- und Backup-Tests prüfen Blobs, Transaktionen und ungültige Archive. UI-Tests decken Import, Aufnahme, Löschen und Session-Steuerung ab.
+Unit-Tests decken AudioEngine, parallele Instanzen, Statuswechsel und Ressourcenfreigabe ab. Storage- und Archivtests prüfen Blobs und ungültige `.paperbard`-Dateien. UI-Tests decken Import, Aufnahme, Löschen und Session-Steuerung ab.
 
 Die manuelle Abnahme erfolgt auf einem iPhone 13 Mini mit aktuellem iOS und mindestens einem aktuellen Android-Smartphone. Geprüft werden Installation, Flugmodus, Hoch- und Querformat, parallele Wiedergabe, Mikrofon, Sperrbildschirm, App-Wechsel und wiederholtes Öffnen der PWA.
