@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { createBackup, parseBackup } from './backup'
+import { audioDownloadName, createBackup, createItemArchive, itemArchiveDownloadName, parseBackup, parseItemArchive } from './backup'
 import type { AudioItem } from '../domain/types'
 import { DEFAULT_SETTINGS } from '../domain/types'
 
@@ -33,5 +33,21 @@ describe('Backup', () => {
 
   it('lehnt ungültige Archive verständlich ab', async () => {
     await expect(parseBackup(new Blob(['kein zip']))).rejects.toThrow('kein gültiges Paper-Bard-Backup')
+  })
+
+  it('exportiert einen einzelnen Eintrag mit Metadaten und Audiodaten', async () => {
+    const archive = await createItemArchive(item())
+    const restored = await parseItemArchive(archive)
+    expect(restored).toMatchObject({ id: 'forest-1', name: 'Wald bei Nacht', type: 'ambience', loop: true, tags: ['forest', 'night'] })
+    expect(Array.from(new Uint8Array(await restored.audioBlob.arrayBuffer()))).toEqual([1, 2, 3, 4])
+  })
+
+  it('lehnt ungültige Paper-Bard-Dateien verständlich ab', async () => {
+    await expect(parseItemArchive(new Blob(['kein zip']))).rejects.toThrow('keine gültige Paper-Bard-Datei')
+  })
+
+  it('erstellt sichere Download-Dateinamen', () => {
+    expect(audioDownloadName({ name: 'Wald / Nacht', mimeType: 'audio/mpeg' })).toBe('Wald - Nacht.mp3')
+    expect(itemArchiveDownloadName({ name: 'Wald / Nacht' })).toBe('Wald - Nacht.paper-bard')
   })
 })

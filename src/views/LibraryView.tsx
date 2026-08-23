@@ -1,12 +1,26 @@
 import { useRef, useState } from 'react'
-import { FileAudio, MoreVertical, Pencil, Plus, Trash2, Upload } from 'lucide-react'
+import { Download, FileArchive, FileAudio, MoreVertical, Pencil, Plus, Trash2, Upload } from 'lucide-react'
 import { AudioForm, formValueFor, type AudioFormValue } from '../components/AudioForm'
 import { useApp } from '../app/AppContext'
 import { createAudioItem, type AudioItem } from '../domain/types'
 import { inspectAudioBlob } from '../domain/audioFile'
+import { audioDownloadName, createItemArchive, itemArchiveDownloadName, parseItemArchive } from '../storage/backup'
 import { errorMessage, formatBytes, formatDuration } from '../app/format'
 
 interface PendingImport { file: File; durationMs: number }
+
+function triggerDownload(blob: Blob, fileName: string) {
+  const url = URL.createObjectURL(blob)
+  const anchor = document.createElement('a')
+  anchor.href = url
+  anchor.download = fileName
+  anchor.click()
+  window.setTimeout(() => URL.revokeObjectURL(url), 1000)
+}
+
+function isItemArchive(file: File): boolean {
+  return file.name.toLowerCase().endsWith('.paper-bard')
+}
 
 export function LibraryView() {
   const { items, addItem, updateItem, removeItem, setMessage } = useApp()
@@ -21,6 +35,12 @@ export function LibraryView() {
     const accepted: PendingImport[] = []
     for (const file of Array.from(files)) {
       try {
+        if (isItemArchive(file)) {
+          const archivedItem = await parseItemArchive(file)
+          await addItem({ ...archivedItem, id: crypto.randomUUID() })
+          setMessage(`${archivedItem.name} wurde erneut importiert.`)
+          continue
+        }
         accepted.push({ file, durationMs: await inspectAudioBlob(file) })
       } catch (error) {
         setMessage(`${file.name}: ${errorMessage(error)}`)
@@ -69,12 +89,26 @@ export function LibraryView() {
     }
   }
 
+  const downloadAudio = (item: AudioItem) => {
+    triggerDownload(item.audioBlob, audioDownloadName(item))
+    setMessage(`${item.name} wurde als Audiodatei geladen.`)
+  }
+
+  const downloadArchive = async (item: AudioItem) => {
+    try {
+      triggerDownload(await createItemArchive(item), itemArchiveDownloadName(item))
+      setMessage(`${item.name} wurde als Paper-Bard-Datei geladen.`)
+    } catch (error) {
+      setMessage(errorMessage(error))
+    }
+  }
+
   return (
     <main className="page">
       <section className="hero compact-hero">
         <div><p className="eyebrow">Deine Sammlung</p><h1>Library</h1><p>Alles, was deine Geschichten hörbar macht.</p></div>
         <button className="button primary" disabled={busy} onClick={() => inputRef.current?.click()}><Upload /> {busy ? 'Prüfe …' : 'Importieren'}</button>
-        <input ref={inputRef} className="visually-hidden" type="file" accept="audio/*" multiple onChange={(event) => { void selectFiles(event.target.files) }} />
+        <input ref={inputRef} className="visually-hidden" type="file" accept="audio/*,.paper-bard" multiple onChange={(event) => { void selectFiles(event.target.files) }} />
       </section>
 
       {items.length === 0 ? (
@@ -101,6 +135,8 @@ export function LibraryView() {
               <details className="item-menu">
                 <summary className="icon-button" aria-label="Menü"><MoreVertical /></summary>
                 <div className="popover">
+                  <button onClick={() => downloadAudio(item)}><Download /> Audiodatei laden</button>
+                  <button onClick={() => { void downloadArchive(item) }}><FileArchive /> Als Paper Bard Datei laden</button>
                   <button onClick={() => setEditing(item)}><Pencil /> Bearbeiten</button>
                   <button className="destructive" onClick={() => { void remove(item) }}><Trash2 /> Löschen</button>
                 </div>

@@ -29,7 +29,7 @@ Soundeffekte erscheinen als große, schnell erreichbare Tasten. Jeder Tap spielt
 
 ## Library
 
-Die Library verwaltet alle lokal vorhandenen Audiodateien. Es können mehrere Dateien vom Gerät importiert werden.
+Die Library verwaltet alle lokal vorhandenen Audiodateien. Es können mehrere Audiodateien oder einzelne Paper-Bard-Dateien vom Gerät importiert werden.
 
 Jeder Eintrag besitzt:
 
@@ -42,6 +42,8 @@ Jeder Eintrag besitzt:
 - Audiodatei
 
 Einträge können bearbeitet und gelöscht werden. Mögliche Tag-Vorschläge sind `combat`, `forest`, `city`, `dungeon`, `horror`, `tavern` und `weather`.
+
+Jeder Eintrag lässt sich entweder als Audiodatei oder als `.paper-bard`-Datei laden. Die Paper-Bard-Datei enthält die Audiodatei und die Metadaten des Eintrags und kann später als neuer Eintrag wieder importiert werden.
 
 ## Aufnahme
 

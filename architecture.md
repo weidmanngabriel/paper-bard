@@ -58,6 +58,8 @@ MediaRecorder wählt zur Laufzeit den ersten unterstützten MIME-Typ aus MP4/AAC
 
 Ein ZIP-Backup enthält `manifest.json` mit `schemaVersion: 1`, Einstellungen, Metadaten und getrennte Dateien unter `audio/`. Beim Import wird das gesamte Archiv geprüft. Erst danach ersetzt eine IndexedDB-Transaktion Library und Einstellungen. Bei einem Fehler bleiben vorhandene Daten unverändert.
 
+Einzelne Einträge lassen sich zusätzlich als `.paper-bard` laden. Dieses ZIP enthält ein Manifest mit `schemaVersion: 1`, der Kennzeichnung `kind: "audio-item"`, allen Eintrags-Metadaten und einer Audiodatei unter `audio/`. Der Library-Import validiert das Archiv vollständig und legt den Eintrag mit einer neuen ID an; vorhandene Library-Daten und Einstellungen bleiben dabei unverändert.
+
 ## PWA und Deployment
 
 Der Service Worker speichert nur App-Shell und statische Assets. Audiodateien verbleiben in IndexedDB. Eine neue Version wird angeboten und nicht während einer laufenden Session erzwungen.

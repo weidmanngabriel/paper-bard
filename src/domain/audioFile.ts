@@ -6,6 +6,14 @@ const RECORDING_TYPES = [
   'audio/ogg;codecs=opus',
 ]
 
+export function safeFileStem(name: string): string {
+  const cleaned = name
+    .trim()
+    .replace(/[<>:"/\\|?*\u0000-\u001F]/g, '-')
+    .replace(/[. ]+$/g, '')
+  return cleaned || 'audio'
+}
+
 export function preferredRecordingMimeType(): string | undefined {
   if (typeof MediaRecorder === 'undefined') return undefined
   return RECORDING_TYPES.find((type) => MediaRecorder.isTypeSupported(type))

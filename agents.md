@@ -1,4 +1,4 @@
-You are working inside of a github repo. Commit to main without PR. Each push will be deployed automatically on a github page.
+You are working inside of a github repo. Commit to main without PR and push. Each push will be deployed automatically on a github page.
 
 Documentation rules:
 
