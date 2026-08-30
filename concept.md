@@ -14,6 +14,13 @@ Optional können Szenen angelegt werden. Eine Szene ist ein gespeichertes Sounds
 
 Szenen lassen sich erstellen, umbenennen, bearbeiten und löschen. Zwischen vorhandenen Szenen kann mit einem Tap gewechselt werden. Beim Wechsel werden die gespeicherten Mix-Einstellungen der neuen Szene auf ihre Sounds angewendet. Laufende Sounds werden durch den Szenenwechsel nicht automatisch gestartet oder gestoppt. Dadurch bleibt der Wechsel kontrollierbar und unterbricht keine laufende Wiedergabe unerwartet.
 
+Bei einer aktiven Szene werden die enthaltenen Sounds nach ihrem Verhalten gegliedert:
+
+- **Dauerklänge**: alle Sounds, deren Loop in dieser Szene aktiviert ist
+- **Einmalige Effekte**: alle Sounds, deren Loop in dieser Szene deaktiviert ist
+
+Eine aktive Szene bietet zusätzlich „Szene starten“. Dieser Befehl startet alle Dauerklänge der Szene gleichzeitig. Bereits laufende Dauerklänge werden nicht doppelt gestartet; pausierte Dauerklänge werden fortgesetzt. Einmalige Effekte werden dabei nicht ausgelöst. Die Ansicht „Alle Sounds“ besitzt keinen eigenen Szenenstart.
+
 Globale Steuerung:
 
 - Master-Lautstärke mit deutlich hörbarer Regelwirkung über den gesamten Reglerbereich

@@ -21,6 +21,12 @@ export function SessionView() {
   const visibleItems = activeScene
     ? items.filter((item) => activeScene.items.some((entry) => entry.audioItemId === item.id))
     : items
+  const loopItems = activeScene
+    ? visibleItems.filter((item) => activeScene.items.find((entry) => entry.audioItemId === item.id)?.loop)
+    : []
+  const oneShotItems = activeScene
+    ? visibleItems.filter((item) => !activeScene.items.find((entry) => entry.audioItemId === item.id)?.loop)
+    : []
 
   const applyScene = (scene?: Scene) => {
     setActiveSceneId(scene?.id)
@@ -32,6 +38,23 @@ export function SessionView() {
       engine.setItemMuted(item, settings.muted)
       engine.setItemLoop(item, settings.loop)
     }
+  }
+
+  const startScene = async () => {
+    if (!activeScene) return
+    const tasks: Promise<void>[] = []
+    for (const settings of activeScene.items.filter((entry) => entry.loop)) {
+      const item = items.find((entry) => entry.id === settings.audioItemId)
+      if (!item) continue
+      const instances = snapshot.instances.filter((instance) => instance.audioItemId === item.id)
+      if (instances.some((instance) => instance.state === 'playing')) continue
+      if (instances.some((instance) => instance.state === 'paused')) {
+        tasks.push(engine.resumeItem(item.id))
+      } else {
+        tasks.push(engine.play(item))
+      }
+    }
+    await Promise.all(tasks)
   }
 
   const createScene = async () => {
@@ -74,6 +97,10 @@ export function SessionView() {
     }
   }
 
+  const renderSceneItems = (groupItems: AudioItem[]) => groupItems.map((item) => item.type === 'soundEffect'
+    ? <EffectPad key={item.id} item={item} instances={snapshot.instances.filter((entry) => entry.audioItemId === item.id)} onControlChange={(control) => saveControl(item, control)} />
+    : <TrackCard key={item.id} item={item} instance={snapshot.instances.find((entry) => entry.audioItemId === item.id)} onControlChange={(control) => saveControl(item, control)} />)
+
   return (
     <main className="page session-page">
       <section className="hero session-hero">
@@ -93,15 +120,22 @@ export function SessionView() {
             <div className="section-icon"><Sparkles /></div>
             <div><h2>Szenen</h2><p>Mit einem Tap zwischen deinen Soundsets wechseln.</p></div>
           </div>
-          <div className="hero-actions" style={{ justifyContent: 'flex-start' }}>
-            <button className={`button ${activeScene ? 'secondary' : 'primary'} compact`} onClick={() => applyScene(undefined)}>Alle Sounds</button>
+          <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 4, WebkitOverflowScrolling: 'touch' }}>
+            <button style={{ width: 'auto', flex: '0 0 auto' }} className={`button ${activeScene ? 'secondary' : 'primary'} compact`} onClick={() => applyScene(undefined)}>Alle Sounds</button>
             {scenes.map((scene) => (
-              <button key={scene.id} className={`button ${scene.id === activeSceneId ? 'primary' : 'secondary'} compact`} onClick={() => applyScene(scene)}>{scene.name}</button>
+              <button style={{ width: 'auto', flex: '0 0 auto' }} key={scene.id} className={`button ${scene.id === activeSceneId ? 'primary' : 'secondary'} compact`} onClick={() => applyScene(scene)}>{scene.name}</button>
             ))}
-            <button className="button secondary compact" onClick={() => { void createScene() }}><Plus /> Szene</button>
-            {activeScene && <button className="icon-button small" onClick={() => setEditingScene(activeScene)} aria-label="Szene bearbeiten"><Settings2 /></button>}
-            {activeScene && <button className="icon-button small" onClick={() => { void deleteActiveScene() }} aria-label="Szene löschen"><Trash2 /></button>}
+            <button style={{ width: 'auto', flex: '0 0 auto' }} className="button secondary compact" onClick={() => { void createScene() }}><Plus /> Szene</button>
           </div>
+          {activeScene && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10, overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+              <button style={{ width: 'auto', flex: '0 0 auto' }} className="button primary compact" onClick={() => run(startScene())} disabled={!loopItems.length}>
+                <Play /> Szene starten
+              </button>
+              <button style={{ flex: '0 0 auto' }} className="icon-button small" onClick={() => setEditingScene(activeScene)} aria-label="Szene bearbeiten"><Settings2 /></button>
+              <button style={{ flex: '0 0 auto' }} className="icon-button small" onClick={() => { void deleteActiveScene() }} aria-label="Szene löschen"><Trash2 /></button>
+            </div>
+          )}
         </section>
       )}
 
@@ -137,6 +171,27 @@ export function SessionView() {
           <p>Füge die Sounds hinzu, die du in dieser Szene brauchst.</p>
           {activeScene && <button className="button primary" onClick={() => setEditingScene(activeScene)}><Settings2 /> Sounds auswählen</button>}
         </section>
+      ) : activeScene ? (
+        <>
+          {loopItems.length > 0 && (
+            <section className="audio-group">
+              <div className="section-heading">
+                <div className="section-icon"><Trees /></div>
+                <div><h2>Dauerklänge</h2><p>Loops, die gemeinsam mit „Szene starten“ loslaufen.</p></div>
+              </div>
+              <div className="track-list">{renderSceneItems(loopItems)}</div>
+            </section>
+          )}
+          {oneShotItems.length > 0 && (
+            <section className="audio-group">
+              <div className="section-heading">
+                <div className="section-icon"><Sparkles /></div>
+                <div><h2>Einmalige Effekte</h2><p>Sounds, die du gezielt im richtigen Moment auslöst.</p></div>
+              </div>
+              <div className="track-list">{renderSceneItems(oneShotItems)}</div>
+            </section>
+          )}
+        </>
       ) : GROUPS.map((group) => {
         const groupItems = visibleItems.filter((item) => item.type === group.type)
         if (!groupItems.length) return null
