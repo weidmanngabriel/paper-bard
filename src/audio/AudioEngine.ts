@@ -14,6 +14,8 @@ interface NativeRuntime {
   item: AudioItem
   element: HTMLAudioElement
   url: string
+  source?: MediaElementAudioSourceNode
+  gain?: GainNode
 }
 
 interface WebRuntime {
@@ -64,6 +66,10 @@ export class AudioEngine {
 
   getSnapshot = (): AudioSnapshot => this.snapshot
 
+  getItemControl(item: AudioItem): ItemControl {
+    return { ...this.controlFor(item) }
+  }
+
   setDefaults(masterVolume: number, fadeDurationMs: number): void {
     this.masterVolume = clampVolume(masterVolume)
     this.fadeDurationMs = Math.max(0, Math.min(5000, fadeDurationMs))
@@ -109,6 +115,7 @@ export class AudioEngine {
     const runtime: NativeRuntime = { instance, item, element, url }
     element.preload = 'auto'
     element.loop = control.loop
+    await this.routeNativeTrack(runtime)
     this.applyNativeVolume(runtime)
     element.onended = () => this.removeNative(id)
     element.onerror = () => this.removeNative(id)
@@ -287,6 +294,23 @@ export class AudioEngine {
     this.emit()
   }
 
+  private async routeNativeTrack(runtime: NativeRuntime): Promise<void> {
+    try {
+      const context = await this.ensureContext()
+      if (!this.masterGain) return
+      const source = context.createMediaElementSource(runtime.element)
+      const gain = context.createGain()
+      source.connect(gain)
+      gain.connect(this.masterGain)
+      runtime.source = source
+      runtime.gain = gain
+      runtime.element.volume = 1
+    } catch {
+      runtime.source = undefined
+      runtime.gain = undefined
+    }
+  }
+
   private startWebEffect(item: AudioItem, buffer: AudioBuffer): void {
     if (!this.context || !this.masterGain) throw new Error('Web Audio ist nicht verfügbar.')
     const control = this.controlFor(item)
@@ -385,7 +409,15 @@ export class AudioEngine {
 
   private async stopNative(runtime: NativeRuntime): Promise<void> {
     if (runtime.instance.state === 'playing' && this.fadeDurationMs > 0) {
-      await this.fadeElement(runtime.element, runtime.element.volume, 0, this.fadeDurationMs)
+      if (runtime.gain && this.context) {
+        const now = this.context.currentTime
+        runtime.gain.gain.cancelScheduledValues(now)
+        runtime.gain.gain.setValueAtTime(runtime.gain.gain.value, now)
+        runtime.gain.gain.linearRampToValueAtTime(0, now + this.fadeDurationMs / 1000)
+        await new Promise<void>((resolve) => window.setTimeout(resolve, this.fadeDurationMs))
+      } else {
+        await this.fadeElement(runtime.element, runtime.element.volume, 0, this.fadeDurationMs)
+      }
     }
     runtime.element.pause()
     this.removeNative(runtime.instance.id)
@@ -411,6 +443,8 @@ export class AudioEngine {
     runtime.element.pause()
     runtime.element.onended = null
     runtime.element.onerror = null
+    runtime.source?.disconnect()
+    runtime.gain?.disconnect()
     runtime.element.removeAttribute('src')
     runtime.element.load()
     URL.revokeObjectURL(runtime.url)
@@ -432,7 +466,13 @@ export class AudioEngine {
   }
 
   private applyNativeVolume(runtime: NativeRuntime): void {
-    runtime.element.volume = runtime.instance.muted ? 0 : clampVolume(runtime.instance.volume * masterGainFor(this.masterVolume))
+    const itemVolume = runtime.instance.muted ? 0 : clampVolume(runtime.instance.volume)
+    if (runtime.gain && this.context) {
+      runtime.element.volume = 1
+      runtime.gain.gain.setValueAtTime(itemVolume, this.context.currentTime)
+      return
+    }
+    runtime.element.volume = clampVolume(itemVolume * masterGainFor(this.masterVolume))
   }
 
   private updateAllVolumes(): void {
