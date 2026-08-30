@@ -46,6 +46,10 @@ IndexedDB heißt `paper-bard` und enthält die Stores `audioItems`, `settings` u
 
 Ohne aktive Szene zeigt die Session alle Library-Einträge. Bei aktiver Szene filtert die UI auf die dort referenzierten AudioItems. Beim Szenenwechsel werden Lautstärke, Mute und Loop der ausgewählten Szene über die AudioEngine auf die zugehörigen Sounds angewendet.
 
+Bei aktiver Szene gruppiert die Session die sichtbaren Einträge nicht nach Audio-Kategorie, sondern nach dem szenenspezifischen Loop-Wert. Einträge mit `loop: true` erscheinen als Dauerklänge, Einträge mit `loop: false` als einmalige Effekte. Dadurch kann auch ein Soundeffekt als Dauerklang oder ein Musikstück als einmaliger Eintrag verwendet werden.
+
+„Szene starten“ iteriert ausschließlich über die Dauerklänge der aktiven Szene. Bereits laufende Instanzen werden nicht dupliziert, pausierte Instanzen werden fortgesetzt und noch nicht laufende Einträge werden über die vorhandene AudioEngine gestartet. Die freie Ansicht „Alle Sounds“ hat keinen entsprechenden Sammelstart.
+
 Ein Szenenwechsel startet oder stoppt keine Wiedergabe automatisch. Bereits laufende Sounds bleiben aktiv, auch wenn sie in der neu gewählten Szene nicht sichtbar sind; `Stop All` bleibt als globale Sicherheitssteuerung verfügbar. Crossfades und automatische Übergänge sind nicht Bestandteil dieser ersten Szenen-Version.
 
 ## Audiowiedergabe
@@ -80,4 +84,4 @@ GitHub Actions führt Tests und den Produktionsbuild aus und veröffentlicht `di
 
 Unit-Tests decken AudioEngine, parallele Instanzen, Statuswechsel, Lautstärkerouting und Ressourcenfreigabe ab. Storage-Tests prüfen AudioItems und Szenen einschließlich szenenspezifischer Mix-Werte. Archivtests prüfen Blobs und ungültige `.paperbard`-Dateien. UI-Tests decken Import, Aufnahme, Löschen und Session-Steuerung ab.
 
-Die manuelle Abnahme erfolgt auf einem iPhone 13 Mini mit aktuellem iOS und mindestens einem aktuellen Android-Smartphone. Geprüft werden Installation, Flugmodus, Hoch- und Querformat, parallele Wiedergabe, Szenenwechsel, Mikrofon, Sperrbildschirm, App-Wechsel und wiederholtes Öffnen der PWA.
+Die manuelle Abnahme erfolgt auf einem iPhone 13 Mini mit aktuellem iOS und mindestens einem aktuellen Android-Smartphone. Geprüft werden Installation, Flugmodus, Hoch- und Querformat, parallele Wiedergabe, Szenenwechsel, Szenen-Sammelstart, Mikrofon, Sperrbildschirm, App-Wechsel und wiederholtes Öffnen der PWA.
