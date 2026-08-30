@@ -36,13 +36,15 @@ Die UI greift nicht direkt auf Browser-Audio-Nodes oder IndexedDB zu.
 
 `PlaybackInstance` ist flüchtig und enthält eine eigene Instanz-ID, AudioItem-ID, Zustand, Position, Lautstärke, Mute und Loop. Musik und Ambience besitzen höchstens eine Instanz pro AudioItem. Soundeffekte dürfen mehrere parallele Instanzen besitzen.
 
-`Settings` enthält Master-Standardlautstärke und Fade-Dauer. Die Session-Mischung wird nicht dauerhaft gespeichert.
+`Settings` enthält Master-Standardlautstärke und Fade-Dauer. Die Session-Mischung wird nicht dauerhaft gespeichert. Änderungen an Lautstärke, Mute und Loop bleiben innerhalb der laufenden App-Session auch nach Stop erhalten, bis die App neu geladen wird.
 
 IndexedDB heißt `paper-bard` und enthält die Stores `audioItems` und `settings`. Schemaänderungen erhöhen die Datenbankversion und benötigen eine Migration.
 
 ## Audiowiedergabe
 
-Musik und Ambience verwenden native `HTMLAudioElement`-Instanzen mit Blob-URLs. Das vermeidet die vollständige Dekodierung langer Dateien und bietet auf mobilen Geräten die beste Chance auf Hintergrundwiedergabe. Die effektive Lautstärke ist Track-Lautstärke × einer quadratischen Master-Kennlinie. Der angezeigte Master-Wert bleibt 0–100 %, wird für die Audio-Ausgabe aber quadriert, damit Änderungen im mittleren und unteren Bereich deutlich hörbar sind.
+Musik und Ambience verwenden weiterhin native `HTMLAudioElement`-Instanzen mit Blob-URLs, werden für die Lautstärkeregelung aber nach Möglichkeit über `MediaElementAudioSourceNode` und einen eigenen GainNode in den gemeinsamen Web-Audio-Master geroutet. Dadurch funktionieren Track- und Master-Lautstärke auch auf iOS, wo `HTMLAudioElement.volume` nicht zuverlässig programmatisch regelbar ist. Falls dieser Web-Audio-Pfad nicht verfügbar ist, bleibt die bisherige direkte Element-Lautstärke als Fallback bestehen.
+
+Die effektive Master-Lautstärke verwendet weiterhin eine quadratische Kennlinie. Der angezeigte Master-Wert bleibt 0–100 %, wird für die Audio-Ausgabe aber quadriert, damit Änderungen im mittleren und unteren Bereich deutlich hörbar sind. Die zusätzliche Web-Audio-Routing-Schicht kann die Hintergrundwiedergabe auf einzelnen mobilen Plattformen beeinflussen; zuverlässige Live-Mischung hat für das MVP Vorrang.
 
 Soundeffekte verwenden primär `AudioBufferSourceNode` und eigene GainNodes. Jeder Tap erzeugt eine unabhängige Instanz. Dekodierte Buffer werden begrenzt zwischengespeichert. Falls Web Audio nicht gestartet oder nach einer Unterbrechung nicht wieder aktiviert werden kann, fällt die Engine auf native Audioelemente zurück.
 
@@ -68,6 +70,6 @@ GitHub Actions führt Tests und den Produktionsbuild aus und veröffentlicht `di
 
 ## Prüfung
 
-Unit-Tests decken AudioEngine, parallele Instanzen, Statuswechsel und Ressourcenfreigabe ab. Storage- und Archivtests prüfen Blobs und ungültige `.paperbard`-Dateien. UI-Tests decken Import, Aufnahme, Löschen und Session-Steuerung ab.
+Unit-Tests decken AudioEngine, parallele Instanzen, Statuswechsel, Lautstärkerouting und Ressourcenfreigabe ab. Storage- und Archivtests prüfen Blobs und ungültige `.paperbard`-Dateien. UI-Tests decken Import, Aufnahme, Löschen und Session-Steuerung ab.
 
 Die manuelle Abnahme erfolgt auf einem iPhone 13 Mini mit aktuellem iOS und mindestens einem aktuellen Android-Smartphone. Geprüft werden Installation, Flugmodus, Hoch- und Querformat, parallele Wiedergabe, Mikrofon, Sperrbildschirm, App-Wechsel und wiederholtes Öffnen der PWA.

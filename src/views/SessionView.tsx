@@ -79,9 +79,7 @@ function TrackCard({ item, instance }: { item: AudioItem; instance?: PlaybackIns
   const { engine, setMessage } = useApp()
   const playing = instance?.state === 'playing'
   const paused = instance?.state === 'paused'
-  const volume = instance?.volume ?? item.volume
-  const muted = instance?.muted ?? false
-  const loop = instance?.loop ?? item.loop
+  const control = engine.getItemControl(item)
   const toggle = () => {
     const task = playing ? Promise.resolve(engine.pauseItem(item.id)) : paused ? engine.resumeItem(item.id) : engine.play(item)
     void task.catch((error) => setMessage(errorMessage(error)))
@@ -96,12 +94,12 @@ function TrackCard({ item, instance }: { item: AudioItem; instance?: PlaybackIns
         <div className="track-title-row">
           <div><h3>{item.name}</h3><span className="status-label">{playing ? 'Spielt' : paused ? 'Pausiert' : 'Bereit'}</span></div>
           <div className="inline-actions">
-            <button className="icon-button small" data-active={loop} onClick={() => engine.setItemLoop(item, !loop)} aria-label="Loop umschalten"><Repeat2 /></button>
-            <button className="icon-button small" data-active={muted} onClick={() => engine.setItemMuted(item, !muted)} aria-label="Stumm umschalten">{muted ? <VolumeX /> : <Volume2 />}</button>
+            <button className="icon-button small" data-active={control.loop} onClick={() => engine.setItemLoop(item, !control.loop)} aria-label="Loop umschalten"><Repeat2 /></button>
+            <button className="icon-button small" data-active={control.muted} onClick={() => engine.setItemMuted(item, !control.muted)} aria-label="Stumm umschalten">{control.muted ? <VolumeX /> : <Volume2 />}</button>
             <button className="icon-button small" onClick={() => { void engine.stopItem(item.id) }} disabled={!instance} aria-label={`${item.name} stoppen`}><Square /></button>
           </div>
         </div>
-        <input aria-label={`Lautstärke ${item.name}`} className="thin-range" type="range" min="0" max="1" step="0.01" value={volume} onChange={(event) => engine.setItemVolume(item, Number(event.target.value))} />
+        <input aria-label={`Lautstärke ${item.name}`} className="thin-range" type="range" min="0" max="1" step="0.01" value={control.volume} onChange={(event) => engine.setItemVolume(item, Number(event.target.value))} />
       </div>
     </article>
   )
@@ -110,10 +108,7 @@ function TrackCard({ item, instance }: { item: AudioItem; instance?: PlaybackIns
 function EffectPad({ item, instances }: { item: AudioItem; instances: PlaybackInstance[] }) {
   const { engine, setMessage } = useApp()
   const playingCount = instances.filter((instance) => instance.state === 'playing').length
-  const control = instances[0]
-  const loop = control?.loop ?? item.loop
-  const muted = control?.muted ?? false
-  const volume = control?.volume ?? item.volume
+  const control = engine.getItemControl(item)
   return (
     <article className="effect-pad" data-playing={playingCount > 0}>
       <button className="effect-trigger" onClick={() => { void engine.play(item).catch((error) => setMessage(errorMessage(error))) }}>
@@ -122,9 +117,9 @@ function EffectPad({ item, instances }: { item: AudioItem; instances: PlaybackIn
         <small>{playingCount ? `${playingCount}× aktiv` : item.tags[0] ?? 'Bereit'}</small>
       </button>
       <div className="effect-controls">
-        <button className="icon-button small" data-active={loop} onClick={() => engine.setItemLoop(item, !loop)} aria-label="Loop umschalten"><Repeat2 /></button>
-        <button className="icon-button small" data-active={muted} onClick={() => engine.setItemMuted(item, !muted)} aria-label="Stumm umschalten">{muted ? <VolumeX /> : <Volume2 />}</button>
-        <input aria-label={`Lautstärke ${item.name}`} type="range" min="0" max="1" step="0.01" value={volume} onChange={(event) => engine.setItemVolume(item, Number(event.target.value))} />
+        <button className="icon-button small" data-active={control.loop} onClick={() => engine.setItemLoop(item, !control.loop)} aria-label="Loop umschalten"><Repeat2 /></button>
+        <button className="icon-button small" data-active={control.muted} onClick={() => engine.setItemMuted(item, !control.muted)} aria-label="Stumm umschalten">{control.muted ? <VolumeX /> : <Volume2 />}</button>
+        <input aria-label={`Lautstärke ${item.name}`} type="range" min="0" max="1" step="0.01" value={control.volume} onChange={(event) => engine.setItemVolume(item, Number(event.target.value))} />
         <button className="icon-button small" onClick={() => { void engine.stopItem(item.id) }} disabled={!instances.length} aria-label="Effekt stoppen"><Square /></button>
       </div>
     </article>
