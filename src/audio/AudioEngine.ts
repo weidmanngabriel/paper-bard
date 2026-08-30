@@ -30,6 +30,11 @@ interface WebRuntime {
 const WEB_AUDIO_TIMEOUT_MS = 1200
 const BUFFER_CACHE_LIMIT = 64 * 1024 * 1024
 
+function masterGainFor(volume: number): number {
+  const clamped = clampVolume(volume)
+  return clamped * clamped
+}
+
 export class AudioEngine {
   private listeners = new Set<Listener>()
   private controls = new Map<string, ItemControl>()
@@ -427,13 +432,13 @@ export class AudioEngine {
   }
 
   private applyNativeVolume(runtime: NativeRuntime): void {
-    runtime.element.volume = runtime.instance.muted ? 0 : clampVolume(runtime.instance.volume * this.masterVolume)
+    runtime.element.volume = runtime.instance.muted ? 0 : clampVolume(runtime.instance.volume * masterGainFor(this.masterVolume))
   }
 
   private updateAllVolumes(): void {
     for (const runtime of this.nativeRuntimes.values()) this.applyNativeVolume(runtime)
     if (this.masterGain && this.context) {
-      this.masterGain.gain.setValueAtTime(this.masterVolume, this.context.currentTime)
+      this.masterGain.gain.setValueAtTime(masterGainFor(this.masterVolume), this.context.currentTime)
     }
   }
 
@@ -443,7 +448,7 @@ export class AudioEngine {
       if (!AudioContextClass) throw new Error('Web Audio wird nicht unterstützt.')
       this.context = new AudioContextClass()
       this.masterGain = this.context.createGain()
-      this.masterGain.gain.value = this.masterVolume
+      this.masterGain.gain.value = masterGainFor(this.masterVolume)
       this.masterGain.connect(this.context.destination)
     }
     if (this.context.state === 'suspended') await this.withTimeout(this.context.resume())

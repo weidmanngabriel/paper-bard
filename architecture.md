@@ -42,7 +42,7 @@ IndexedDB heißt `paper-bard` und enthält die Stores `audioItems` und `settings
 
 ## Audiowiedergabe
 
-Musik und Ambience verwenden native `HTMLAudioElement`-Instanzen mit Blob-URLs. Das vermeidet die vollständige Dekodierung langer Dateien und bietet auf mobilen Geräten die beste Chance auf Hintergrundwiedergabe. Die effektive Lautstärke ist Track-Lautstärke × Master-Lautstärke.
+Musik und Ambience verwenden native `HTMLAudioElement`-Instanzen mit Blob-URLs. Das vermeidet die vollständige Dekodierung langer Dateien und bietet auf mobilen Geräten die beste Chance auf Hintergrundwiedergabe. Die effektive Lautstärke ist Track-Lautstärke × einer quadratischen Master-Kennlinie. Der angezeigte Master-Wert bleibt 0–100 %, wird für die Audio-Ausgabe aber quadriert, damit Änderungen im mittleren und unteren Bereich deutlich hörbar sind.
 
 Soundeffekte verwenden primär `AudioBufferSourceNode` und eigene GainNodes. Jeder Tap erzeugt eine unabhängige Instanz. Dekodierte Buffer werden begrenzt zwischengespeichert. Falls Web Audio nicht gestartet oder nach einer Unterbrechung nicht wieder aktiviert werden kann, fällt die Engine auf native Audioelemente zurück.
 

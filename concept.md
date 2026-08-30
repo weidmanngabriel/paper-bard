@@ -12,7 +12,7 @@ Die Session ist die Hauptansicht während des Spielens. Alle Einträge der Libra
 
 Globale Steuerung:
 
-- Master-Lautstärke
+- Master-Lautstärke mit deutlich hörbarer Regelwirkung über den gesamten Reglerbereich
 - Stop All
 - Pause All und Resume All
 
