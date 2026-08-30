@@ -34,11 +34,19 @@ Die UI greift nicht direkt auf Browser-Audio-Nodes oder IndexedDB zu.
 
 `AudioItem` enthält ID, Name, Kategorie, Blob, MIME-Typ, optionalen ursprünglichen Dateinamen, Dauer, Dateigröße, Lautstärke, Loop, Tags, Erstellungszeit und Quelle (`imported` oder `recorded`).
 
+`Scene` enthält ID, Name, Erstellungszeit und eine Liste von `SceneItemSettings`. Jeder Szeneneintrag referenziert ein vorhandenes `AudioItem` über dessen ID und speichert die szenenspezifischen Werte für Lautstärke, Mute und Loop. Audiodaten werden dadurch nicht dupliziert.
+
 `PlaybackInstance` ist flüchtig und enthält eine eigene Instanz-ID, AudioItem-ID, Zustand, Position, Lautstärke, Mute und Loop. Musik und Ambience besitzen höchstens eine Instanz pro AudioItem. Soundeffekte dürfen mehrere parallele Instanzen besitzen.
 
-`Settings` enthält Master-Standardlautstärke und Fade-Dauer. Die Session-Mischung wird nicht dauerhaft gespeichert. Änderungen an Lautstärke, Mute und Loop bleiben innerhalb der laufenden App-Session auch nach Stop erhalten, bis die App neu geladen wird.
+`Settings` enthält Master-Standardlautstärke und Fade-Dauer. Die freie Session-Mischung ohne aktive Szene wird nicht dauerhaft gespeichert. Änderungen an Lautstärke, Mute und Loop bleiben innerhalb der laufenden App-Session auch nach Stop erhalten, bis die App neu geladen wird. Szenen speichern ihre eigenen Mix-Werte dagegen dauerhaft.
 
-IndexedDB heißt `paper-bard` und enthält die Stores `audioItems` und `settings`. Schemaänderungen erhöhen die Datenbankversion und benötigen eine Migration.
+IndexedDB heißt `paper-bard` und enthält die Stores `audioItems`, `settings` und `scenes`. Version 2 ergänzt den `scenes`-Store über eine Migration, ohne bestehende AudioItems oder Einstellungen zu verändern. Beim Löschen eines AudioItems werden Referenzen aus allen Szenen entfernt. Das vollständige Löschen der Library leert auch die Szenen.
+
+## Szenenlogik
+
+Ohne aktive Szene zeigt die Session alle Library-Einträge. Bei aktiver Szene filtert die UI auf die dort referenzierten AudioItems. Beim Szenenwechsel werden Lautstärke, Mute und Loop der ausgewählten Szene über die AudioEngine auf die zugehörigen Sounds angewendet.
+
+Ein Szenenwechsel startet oder stoppt keine Wiedergabe automatisch. Bereits laufende Sounds bleiben aktiv, auch wenn sie in der neu gewählten Szene nicht sichtbar sind; `Stop All` bleibt als globale Sicherheitssteuerung verfügbar. Crossfades und automatische Übergänge sind nicht Bestandteil dieser ersten Szenen-Version.
 
 ## Audiowiedergabe
 
@@ -70,6 +78,6 @@ GitHub Actions führt Tests und den Produktionsbuild aus und veröffentlicht `di
 
 ## Prüfung
 
-Unit-Tests decken AudioEngine, parallele Instanzen, Statuswechsel, Lautstärkerouting und Ressourcenfreigabe ab. Storage- und Archivtests prüfen Blobs und ungültige `.paperbard`-Dateien. UI-Tests decken Import, Aufnahme, Löschen und Session-Steuerung ab.
+Unit-Tests decken AudioEngine, parallele Instanzen, Statuswechsel, Lautstärkerouting und Ressourcenfreigabe ab. Storage-Tests prüfen AudioItems und Szenen einschließlich szenenspezifischer Mix-Werte. Archivtests prüfen Blobs und ungültige `.paperbard`-Dateien. UI-Tests decken Import, Aufnahme, Löschen und Session-Steuerung ab.
 
-Die manuelle Abnahme erfolgt auf einem iPhone 13 Mini mit aktuellem iOS und mindestens einem aktuellen Android-Smartphone. Geprüft werden Installation, Flugmodus, Hoch- und Querformat, parallele Wiedergabe, Mikrofon, Sperrbildschirm, App-Wechsel und wiederholtes Öffnen der PWA.
+Die manuelle Abnahme erfolgt auf einem iPhone 13 Mini mit aktuellem iOS und mindestens einem aktuellen Android-Smartphone. Geprüft werden Installation, Flugmodus, Hoch- und Querformat, parallele Wiedergabe, Szenenwechsel, Mikrofon, Sperrbildschirm, App-Wechsel und wiederholtes Öffnen der PWA.

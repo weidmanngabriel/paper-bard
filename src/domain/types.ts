@@ -17,6 +17,20 @@ export interface AudioItem {
   source: AudioSource
 }
 
+export interface SceneItemSettings {
+  audioItemId: string
+  volume: number
+  muted: boolean
+  loop: boolean
+}
+
+export interface Scene {
+  id: string
+  name: string
+  items: SceneItemSettings[]
+  createdAt: string
+}
+
 export interface AppSettings {
   masterVolume: number
   fadeDurationMs: number

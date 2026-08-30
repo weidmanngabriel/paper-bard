@@ -8,7 +8,11 @@ Die wichtigsten Zielgeräte sind aktuelle iPhones und iPads sowie Android-Smartp
 
 ## Session
 
-Die Session ist die Hauptansicht während des Spielens. Alle Einträge der Library erscheinen automatisch nach Musik, Ambience und Soundeffekten gruppiert.
+Die Session ist die Hauptansicht während des Spielens. Ohne ausgewählte Szene erscheinen alle Einträge der Library automatisch nach Musik, Ambience und Soundeffekten gruppiert.
+
+Optional können Szenen angelegt werden. Eine Szene ist ein gespeichertes Soundset für einen Spielmoment, zum Beispiel Wald, Kampf oder Taverne. Für jede Szene lässt sich festlegen, welche Library-Einträge auf der Session-Seite sichtbar sind. Zusätzlich speichert jede Szene für ihre Sounds eigene Werte für Lautstärke, Mute und Loop.
+
+Szenen lassen sich erstellen, umbenennen, bearbeiten und löschen. Zwischen vorhandenen Szenen kann mit einem Tap gewechselt werden. Beim Wechsel werden die gespeicherten Mix-Einstellungen der neuen Szene auf ihre Sounds angewendet. Laufende Sounds werden durch den Szenenwechsel nicht automatisch gestartet oder gestoppt. Dadurch bleibt der Wechsel kontrollierbar und unterbricht keine laufende Wiedergabe unerwartet.
 
 Globale Steuerung:
 
@@ -23,7 +27,7 @@ Musik und Ambience bieten jeweils:
 - Lautstärke und Mute
 - klar erkennbaren Wiedergabestatus
 
-Mehrere Tracks dürfen gleichzeitig laufen. Lautstärke, Mute und Loop müssen während der laufenden App-Session sofort wirksam sein und auch nach Stop oder Stop All erhalten bleiben. Erst ein vollständiger Neustart der App setzt diese Session-Werte wieder auf die in der Library gespeicherten Standards zurück.
+Mehrere Tracks dürfen gleichzeitig laufen. Lautstärke, Mute und Loop müssen während der laufenden App-Session sofort wirksam sein und auch nach Stop oder Stop All erhalten bleiben. Ohne aktive Szene setzt erst ein vollständiger Neustart der App diese Session-Werte wieder auf die in der Library gespeicherten Standards zurück. Innerhalb einer Szene werden deren Mix-Einstellungen dauerhaft lokal gespeichert.
 
 Soundeffekte erscheinen als große, schnell erreichbare Tasten. Jeder Tap spielt eine neue Instanz ab, sodass derselbe Effekt mehrfach gleichzeitig laufen kann. Pro Effekt stehen außerdem Loop, Lautstärke, Mute und Stop zur Verfügung.
 
@@ -41,7 +45,7 @@ Jeder Eintrag besitzt:
 - Erstellungsdatum und Quelle
 - Audiodatei
 
-Einträge können bearbeitet und gelöscht werden. Mögliche Tag-Vorschläge sind `combat`, `forest`, `city`, `dungeon`, `horror`, `tavern` und `weather`.
+Einträge können bearbeitet und gelöscht werden. Wird ein Eintrag gelöscht, wird er auch aus allen Szenen entfernt. Mögliche Tag-Vorschläge sind `combat`, `forest`, `city`, `dungeon`, `horror`, `tavern` und `weather`.
 
 Jeder Eintrag lässt sich entweder als Audiodatei oder als `.paperbard`-Datei laden. Die Paper-Bard-Datei enthält die Audiodatei und die Metadaten des Eintrags und kann später als neuer Eintrag wieder importiert werden.
 
@@ -65,7 +69,7 @@ Für das MVP stehen zur Verfügung:
 - Master-Standardlautstärke
 - Standard-Fade-Dauer
 - Anzeige des lokalen Speicherverbrauchs
-- vollständiges Löschen der Library nach Bestätigung
+- vollständiges Löschen der Library und der zugehörigen Szenen nach Bestätigung
 
 ## Qualitätsziele
 
@@ -82,9 +86,9 @@ Musik soll bei gesperrtem Bildschirm oder App-Wechsel weiterlaufen, soweit das m
 
 ## Nicht Teil des MVP
 
-- Scenes und Crossfades zwischen Scenes
+- Crossfades zwischen Szenen
+- automatisches Starten oder Stoppen von Sounds beim Szenenwechsel
 - Favoriten
-- frei konfigurierbares Session-Soundboard
 - Drag-and-drop-Sortierung
 - Effektgruppen
 - Suche und Filter
