@@ -23,7 +23,7 @@ Musik und Ambience bieten jeweils:
 - Lautstärke und Mute
 - klar erkennbaren Wiedergabestatus
 
-Mehrere Tracks dürfen gleichzeitig laufen.
+Mehrere Tracks dürfen gleichzeitig laufen. Lautstärke, Mute und Loop müssen während der laufenden App-Session sofort wirksam sein und auch nach Stop oder Stop All erhalten bleiben. Erst ein vollständiger Neustart der App setzt diese Session-Werte wieder auf die in der Library gespeicherten Standards zurück.
 
 Soundeffekte erscheinen als große, schnell erreichbare Tasten. Jeder Tap spielt eine neue Instanz ab, sodass derselbe Effekt mehrfach gleichzeitig laufen kann. Pro Effekt stehen außerdem Loop, Lautstärke, Mute und Stop zur Verfügung.
 
@@ -71,14 +71,14 @@ Für das MVP stehen zur Verfügung:
 
 Prioritäten:
 
-1. zuverlässige Audiowiedergabe
+1. zuverlässige Audiowiedergabe und hörbar funktionierende Live-Lautstärkeregelung
 2. schnelle Touch-Bedienung während der Session
 3. vollständige Offline-Nutzung nach Installation und Import
 4. sichere lokale Speicherung
 5. einfacher Dateiimport
 6. einfache Mikrofonaufnahme
 
-Musik soll bei gesperrtem Bildschirm oder App-Wechsel weiterlaufen, soweit das mobile Betriebssystem dies zulässt. Nach einer Unterbrechung darf die App keinen falschen Wiedergabestatus anzeigen und muss per Tap wieder nutzbar sein.
+Musik soll bei gesperrtem Bildschirm oder App-Wechsel weiterlaufen, soweit das mobile Betriebssystem dies zulässt. Nach einer Unterbrechung darf die App keinen falschen Wiedergabestatus anzeigen und muss per Tap wieder nutzbar sein. Falls auf einer Plattform ein technischer Zielkonflikt zwischen Hintergrundwiedergabe und zuverlässiger Live-Lautstärkeregelung besteht, hat die Live-Lautstärkeregelung im MVP Vorrang.
 
 ## Nicht Teil des MVP
 
