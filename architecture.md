@@ -40,7 +40,7 @@ Die UI greift nicht direkt auf Browser-Audio-Nodes oder IndexedDB zu.
 
 `Settings` enthält Master-Standardlautstärke und Fade-Dauer. Die freie Session-Mischung ohne aktive Szene wird nicht dauerhaft gespeichert. Änderungen an Lautstärke, Mute und Loop bleiben innerhalb der laufenden App-Session auch nach Stop erhalten, bis die App neu geladen wird. Szenen speichern ihre eigenen Mix-Werte dagegen dauerhaft.
 
-IndexedDB heißt `paper-bard` und enthält die Stores `audioItems`, `settings` und `scenes`. Version 2 ergänzt den `scenes`-Store über eine Migration, ohne bestehende AudioItems oder Einstellungen zu verändern. Beim Löschen eines AudioItems werden Referenzen aus allen Szenen entfernt. Das vollständige Löschen der Library leert auch die Szenen.
+IndexedDB heißt `paper-bard` und enthält die Stores `audioItems`, `settings` und `scenes`. Version 2 ergänzt den `scenes`-Store über eine Migration, ohne bestehende AudioItems oder Einstellungen zu verändern. Beim Löschen eines AudioItems werden das AudioItem und alle zugehörigen Szenenreferenzen innerhalb derselben Read-Write-Transaktion geändert, damit kein dauerhaft inkonsistenter Zwischenzustand entstehen kann. Das vollständige Löschen der Library leert ebenfalls AudioItems und Szenen in einer gemeinsamen Transaktion.
 
 ## Szenenlogik
 
@@ -62,7 +62,7 @@ Soundeffekte verwenden primär `AudioBufferSourceNode` und eigene GainNodes. Jed
 
 Die AudioEngine veröffentlicht unveränderliche Snapshots an React und bietet Play, Pause, Resume, Stop, Stop All, Pause/Resume All, Loop, Mute sowie Track- und Master-Lautstärke. Objekt-URLs, Nodes und Ereignishandler werden bei Ende, Stop und Löschen freigegeben.
 
-Bei `visibilitychange`, `pageshow` und einer Benutzeraktion gleicht die Engine ihren Zustand mit den Browser-Elementen ab. Media Session steuert Pause/Resume All, wenn die Plattform die API unterstützt. Hintergrundwiedergabe bleibt eine Best-Effort-Funktion des Betriebssystems.
+Bei `visibilitychange`, `pageshow` und einer Benutzeraktion gleicht die Engine ihren Zustand mit den Browser-Elementen ab. Vom Browser pausierte Instanzen werden als global fortsetzbar markiert, ohne bewusst einzeln pausierte Sounds mitzureißen. Falls ein suspendierter AudioContext nicht fortgesetzt werden kann, baut die Engine den Kontext neu auf, verbindet laufende native Tracks mit frischen Audioelementen erneut und übernimmt ihre Wiedergabeposition und Mix-Werte. Laufende Web-Audio-Effekte werden ebenfalls an den neuen Master-Kontext angebunden. Media Session steuert Pause/Resume All, wenn die Plattform die API unterstützt. Hintergrundwiedergabe bleibt eine Best-Effort-Funktion des Betriebssystems.
 
 ## Import, Aufnahme und Einzeldatei-Export
 
@@ -82,6 +82,6 @@ GitHub Actions führt Tests und den Produktionsbuild aus und veröffentlicht `di
 
 ## Prüfung
 
-Unit-Tests decken AudioEngine, parallele Instanzen, Statuswechsel, Lautstärkerouting und Ressourcenfreigabe ab. Storage-Tests prüfen AudioItems und Szenen einschließlich szenenspezifischer Mix-Werte. Archivtests prüfen Blobs und ungültige `.paperbard`-Dateien. UI-Tests decken Import, Aufnahme, Löschen und Session-Steuerung ab.
+Unit-Tests decken AudioEngine, parallele Instanzen, Statuswechsel, Lautstärkerouting, Browser-Unterbrechungen, AudioContext-Wiederaufbau und Ressourcenfreigabe ab. Storage-Tests prüfen AudioItems und Szenen einschließlich szenenspezifischer Mix-Werte sowie das atomare Entfernen von Szenenreferenzen beim Löschen eines AudioItems. Archivtests prüfen Blobs und ungültige `.paperbard`-Dateien. UI-Tests decken Import, Aufnahme, Löschen und Session-Steuerung ab.
 
 Die manuelle Abnahme erfolgt auf einem iPhone 13 Mini mit aktuellem iOS und mindestens einem aktuellen Android-Smartphone. Geprüft werden Installation, Flugmodus, Hoch- und Querformat, parallele Wiedergabe, Szenenwechsel, Szenen-Sammelstart, Mikrofon, Sperrbildschirm, App-Wechsel und wiederholtes Öffnen der PWA.
