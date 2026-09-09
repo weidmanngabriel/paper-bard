@@ -55,6 +55,24 @@ export async function deleteAudioItem(id: string): Promise<void> {
   await db.delete('audioItems', id)
 }
 
+export async function deleteAudioItemAndSceneReferences(id: string): Promise<void> {
+  const db = await database()
+  const transaction = db.transaction(['audioItems', 'scenes'], 'readwrite')
+  const sceneStore = transaction.objectStore('scenes')
+  const scenes = await sceneStore.getAll()
+
+  await Promise.all([
+    transaction.objectStore('audioItems').delete(id),
+    ...scenes
+      .filter((scene) => scene.items.some((entry) => entry.audioItemId === id))
+      .map((scene) => sceneStore.put({
+        ...scene,
+        items: scene.items.filter((entry) => entry.audioItemId !== id),
+      })),
+  ])
+  await transaction.done
+}
+
 export async function getAllScenes(): Promise<Scene[]> {
   const db = await database()
   return db.getAllFromIndex('scenes', 'by-createdAt')
@@ -86,8 +104,8 @@ export async function clearLibrary(): Promise<void> {
   await Promise.all([
     transaction.objectStore('audioItems').clear(),
     transaction.objectStore('scenes').clear(),
-    transaction.done,
   ])
+  await transaction.done
 }
 
 export async function storageEstimate(): Promise<{ usage: number; quota: number }> {
