@@ -43,6 +43,7 @@ export class AudioEngine {
   private nativeRuntimes = new Map<string, NativeRuntime>()
   private webRuntimes = new Map<string, WebRuntime>()
   private globallyPausedIds = new Set<string>()
+  private manuallyPausedIds = new Set<string>()
   private context?: AudioContext
   private masterGain?: GainNode
   private bufferCache = new Map<string, { buffer: AudioBuffer; bytes: number; usedAt: number }>()
@@ -79,11 +80,8 @@ export class AudioEngine {
 
   async play(item: AudioItem): Promise<void> {
     await this.activate()
-    if (item.type === 'soundEffect') {
-      await this.playEffect(item)
-    } else {
-      await this.playTrack(item)
-    }
+    if (item.type === 'soundEffect') await this.playEffect(item)
+    else await this.playTrack(item)
   }
 
   async playTrack(item: AudioItem): Promise<void> {
@@ -94,6 +92,9 @@ export class AudioEngine {
       if (existing.instance.state === 'paused') {
         await existing.element.play()
         existing.instance.state = 'playing'
+        this.manuallyPausedIds.delete(existing.instance.id)
+        this.globallyPausedIds.delete(existing.instance.id)
+        this.refreshGlobalPauseState()
         this.emit()
       }
       return
@@ -103,22 +104,23 @@ export class AudioEngine {
     const url = URL.createObjectURL(item.audioBlob)
     const element = new Audio(url)
     const id = crypto.randomUUID()
-    const instance: PlaybackInstance = {
-      id,
-      audioItemId: item.id,
-      state: 'playing',
-      volume: control.volume,
-      muted: control.muted,
-      loop: control.loop,
-      kind: 'track',
+    const runtime: NativeRuntime = {
+      item,
+      element,
+      url,
+      instance: {
+        id,
+        audioItemId: item.id,
+        state: 'playing',
+        volume: control.volume,
+        muted: control.muted,
+        loop: control.loop,
+        kind: 'track',
+      },
     }
-    const runtime: NativeRuntime = { instance, item, element, url }
-    element.preload = 'auto'
-    element.loop = control.loop
+    this.configureNativeRuntime(runtime)
     await this.routeNativeTrack(runtime)
     this.applyNativeVolume(runtime)
-    element.onended = () => this.removeNative(id)
-    element.onerror = () => this.removeNative(id)
     this.nativeRuntimes.set(id, runtime)
     try {
       await element.play()
@@ -141,11 +143,20 @@ export class AudioEngine {
 
   pauseItem(audioItemId: string): void {
     for (const runtime of this.nativeRuntimes.values()) {
-      if (runtime.item.id === audioItemId && runtime.instance.state === 'playing') this.pauseNative(runtime)
+      if (runtime.item.id === audioItemId && runtime.instance.state === 'playing') {
+        this.pauseNative(runtime)
+        this.manuallyPausedIds.add(runtime.instance.id)
+        this.globallyPausedIds.delete(runtime.instance.id)
+      }
     }
     for (const runtime of this.webRuntimes.values()) {
-      if (runtime.item.id === audioItemId && runtime.instance.state === 'playing') this.pauseWeb(runtime)
+      if (runtime.item.id === audioItemId && runtime.instance.state === 'playing') {
+        this.pauseWeb(runtime)
+        this.manuallyPausedIds.add(runtime.instance.id)
+        this.globallyPausedIds.delete(runtime.instance.id)
+      }
     }
+    this.refreshGlobalPauseState()
     this.emit()
   }
 
@@ -154,13 +165,22 @@ export class AudioEngine {
     const tasks: Promise<void>[] = []
     for (const runtime of this.nativeRuntimes.values()) {
       if (runtime.item.id === audioItemId && runtime.instance.state === 'paused') {
-        tasks.push(runtime.element.play().then(() => { runtime.instance.state = 'playing' }))
+        tasks.push(runtime.element.play().then(() => {
+          runtime.instance.state = 'playing'
+          this.manuallyPausedIds.delete(runtime.instance.id)
+          this.globallyPausedIds.delete(runtime.instance.id)
+        }))
       }
     }
     for (const runtime of this.webRuntimes.values()) {
-      if (runtime.item.id === audioItemId && runtime.instance.state === 'paused') this.startWebSource(runtime)
+      if (runtime.item.id === audioItemId && runtime.instance.state === 'paused') {
+        this.startWebSource(runtime)
+        this.manuallyPausedIds.delete(runtime.instance.id)
+        this.globallyPausedIds.delete(runtime.instance.id)
+      }
     }
     await Promise.all(tasks)
+    this.refreshGlobalPauseState()
     this.emit()
   }
 
@@ -177,6 +197,7 @@ export class AudioEngine {
     await Promise.all(native.map((runtime) => this.stopNative(runtime)))
     web.forEach((runtime) => this.stopWeb(runtime))
     this.globallyPausedIds.clear()
+    this.manuallyPausedIds.clear()
     this.globallyPaused = false
     this.emit()
   }
@@ -195,18 +216,21 @@ export class AudioEngine {
         this.pauseWeb(runtime)
       }
     }
-    this.globallyPaused = this.globallyPausedIds.size > 0
+    this.refreshGlobalPauseState()
     this.emit()
   }
 
   async resumeAll(): Promise<void> {
     await this.activate()
+    const ids = [...this.globallyPausedIds]
     const tasks: Promise<void>[] = []
-    for (const id of this.globallyPausedIds) {
+    for (const id of ids) {
       const native = this.nativeRuntimes.get(id)
-      if (native) tasks.push(native.element.play().then(() => { native.instance.state = 'playing' }))
+      if (native && native.instance.state === 'paused') {
+        tasks.push(native.element.play().then(() => { native.instance.state = 'playing' }))
+      }
       const web = this.webRuntimes.get(id)
-      if (web) this.startWebSource(web)
+      if (web && web.instance.state === 'paused') this.startWebSource(web)
     }
     await Promise.allSettled(tasks)
     this.globallyPausedIds.clear()
@@ -263,8 +287,8 @@ export class AudioEngine {
   destroy(): void {
     window.removeEventListener('pageshow', this.syncState)
     document.removeEventListener('visibilitychange', this.syncState)
-    for (const runtime of this.nativeRuntimes.values()) this.removeNative(runtime.instance.id)
-    for (const runtime of this.webRuntimes.values()) this.removeWeb(runtime.instance.id)
+    for (const runtime of [...this.nativeRuntimes.values()]) this.removeNative(runtime.instance.id)
+    for (const runtime of [...this.webRuntimes.values()]) this.removeWeb(runtime.instance.id)
     void this.context?.close()
     this.listeners.clear()
   }
@@ -292,6 +316,13 @@ export class AudioEngine {
       }
     }
     this.emit()
+  }
+
+  private configureNativeRuntime(runtime: NativeRuntime): void {
+    runtime.element.preload = 'auto'
+    runtime.element.loop = runtime.instance.loop
+    runtime.element.onended = () => this.removeNative(runtime.instance.id)
+    runtime.element.onerror = () => this.removeNative(runtime.instance.id)
   }
 
   private async routeNativeTrack(runtime: NativeRuntime): Promise<void> {
@@ -378,10 +409,8 @@ export class AudioEngine {
         kind: 'effect',
       },
     }
-    element.loop = control.loop
+    this.configureNativeRuntime(runtime)
     this.applyNativeVolume(runtime)
-    element.onended = () => this.removeNative(id)
-    element.onerror = () => this.removeNative(id)
     this.nativeRuntimes.set(id, runtime)
     try {
       await element.play()
@@ -401,7 +430,7 @@ export class AudioEngine {
     if (!this.context || !runtime.source) return
     runtime.offset += Math.max(0, this.context.currentTime - runtime.startedAt)
     runtime.intentionalStop = true
-    runtime.source.stop()
+    try { runtime.source.stop() } catch { /* already stopped */ }
     runtime.source.disconnect()
     runtime.source = undefined
     runtime.instance.state = 'paused'
@@ -450,6 +479,8 @@ export class AudioEngine {
     URL.revokeObjectURL(runtime.url)
     this.nativeRuntimes.delete(id)
     this.globallyPausedIds.delete(id)
+    this.manuallyPausedIds.delete(id)
+    this.refreshGlobalPauseState()
     this.emit()
   }
 
@@ -462,6 +493,8 @@ export class AudioEngine {
     runtime.gain.disconnect()
     this.webRuntimes.delete(id)
     this.globallyPausedIds.delete(id)
+    this.manuallyPausedIds.delete(id)
+    this.refreshGlobalPauseState()
     this.emit()
   }
 
@@ -496,10 +529,75 @@ export class AudioEngine {
   }
 
   private async rebuildContext(): Promise<void> {
-    try { await this.context?.close() } catch { /* best effort */ }
+    const oldContext = this.context
+    const routedNative = Array.from(this.nativeRuntimes.values()).filter((runtime) => runtime.source || runtime.gain)
+    const web = Array.from(this.webRuntimes.values())
+
+    for (const runtime of web) {
+      if (runtime.instance.state === 'playing' && oldContext && runtime.source) {
+        runtime.offset += Math.max(0, oldContext.currentTime - runtime.startedAt)
+      }
+      runtime.intentionalStop = true
+      try { runtime.source?.stop() } catch { /* already stopped */ }
+      runtime.source?.disconnect()
+      runtime.source = undefined
+      runtime.gain.disconnect()
+    }
+    for (const runtime of routedNative) {
+      runtime.source?.disconnect()
+      runtime.gain?.disconnect()
+      runtime.source = undefined
+      runtime.gain = undefined
+    }
+
+    try { await oldContext?.close() } catch { /* best effort */ }
     this.context = undefined
     this.masterGain = undefined
     this.bufferCache.clear()
+
+    if (!routedNative.length && !web.length) return
+    await this.ensureContext()
+
+    for (const runtime of routedNative) await this.rebuildNativeRuntime(runtime)
+    for (const runtime of web) {
+      if (!this.context || !this.masterGain) break
+      const gain = this.context.createGain()
+      gain.gain.value = runtime.instance.muted ? 0 : runtime.instance.volume
+      gain.connect(this.masterGain)
+      runtime.gain = gain
+      runtime.intentionalStop = false
+      if (runtime.instance.state === 'playing') this.startWebSource(runtime)
+    }
+    this.updateAllVolumes()
+    this.emit()
+  }
+
+  private async rebuildNativeRuntime(runtime: NativeRuntime): Promise<void> {
+    const previous = runtime.element
+    const position = Number.isFinite(previous.currentTime) ? previous.currentTime : 0
+    const shouldPlay = runtime.instance.state === 'playing'
+    previous.pause()
+    previous.onended = null
+    previous.onerror = null
+    previous.removeAttribute('src')
+    previous.load()
+
+    const replacement = new Audio(runtime.url)
+    runtime.element = replacement
+    this.configureNativeRuntime(runtime)
+    try { replacement.currentTime = position } catch { /* metadata may not be ready yet */ }
+    await this.routeNativeTrack(runtime)
+    this.applyNativeVolume(runtime)
+
+    if (shouldPlay) {
+      try {
+        await replacement.play()
+      } catch {
+        runtime.instance.state = 'paused'
+        this.globallyPausedIds.add(runtime.instance.id)
+        this.refreshGlobalPauseState()
+      }
+    }
   }
 
   private async bufferFor(item: AudioItem, context: AudioContext): Promise<AudioBuffer> {
@@ -545,11 +643,40 @@ export class AudioEngine {
     ])
   }
 
+  private refreshGlobalPauseState(): void {
+    this.globallyPaused = this.globallyPausedIds.size > 0
+  }
+
   private syncState = (): void => {
-    for (const runtime of this.nativeRuntimes.values()) {
-      if (runtime.element.ended) this.removeNative(runtime.instance.id)
-      else if (runtime.element.paused && runtime.instance.state === 'playing') runtime.instance.state = 'paused'
+    if (this.context?.state === 'suspended') {
+      for (const runtime of this.nativeRuntimes.values()) {
+        if (runtime.source && runtime.instance.state === 'playing') {
+          this.pauseNative(runtime)
+          this.globallyPausedIds.add(runtime.instance.id)
+        }
+      }
+      for (const runtime of this.webRuntimes.values()) {
+        if (runtime.instance.state === 'playing') {
+          this.pauseWeb(runtime)
+          this.globallyPausedIds.add(runtime.instance.id)
+        }
+      }
     }
+
+    for (const runtime of [...this.nativeRuntimes.values()]) {
+      if (runtime.element.ended) {
+        this.removeNative(runtime.instance.id)
+        continue
+      }
+      if (runtime.element.paused && runtime.instance.state === 'playing') {
+        runtime.instance.state = 'paused'
+        if (!this.manuallyPausedIds.has(runtime.instance.id)) this.globallyPausedIds.add(runtime.instance.id)
+      } else if (!runtime.element.paused && runtime.instance.state === 'paused' && this.globallyPausedIds.has(runtime.instance.id)) {
+        runtime.instance.state = 'playing'
+        this.globallyPausedIds.delete(runtime.instance.id)
+      }
+    }
+    this.refreshGlobalPauseState()
     this.emit()
   }
 
