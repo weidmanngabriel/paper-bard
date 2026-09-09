@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { clearLibrary, getAllAudioItems, getAllScenes, resetDatabaseForTests, saveAudioItem, saveScene } from './database'
+import { clearLibrary, deleteAudioItemAndSceneReferences, getAllAudioItems, getAllScenes, resetDatabaseForTests, saveAudioItem, saveScene } from './database'
 import type { AudioItem, Scene } from '../domain/types'
 
 const sample: AudioItem = {
@@ -47,5 +47,15 @@ describe('IndexedDB Storage', () => {
     expect((await getAllScenes())[0]).toEqual(scene)
     await clearLibrary()
     expect(await getAllScenes()).toEqual([])
+  })
+
+  it('löscht AudioItem und Szenenreferenzen gemeinsam', async () => {
+    await saveAudioItem(sample)
+    await saveScene(scene)
+
+    await deleteAudioItemAndSceneReferences(sample.id)
+
+    expect(await getAllAudioItems()).toEqual([])
+    expect(await getAllScenes()).toEqual([{ ...scene, items: [] }])
   })
 })
