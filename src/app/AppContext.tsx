@@ -4,7 +4,7 @@ import type { AppSettings, AudioItem, AudioSnapshot, Scene } from '../domain/typ
 import { DEFAULT_SETTINGS } from '../domain/types'
 import {
   clearLibrary,
-  deleteAudioItem,
+  deleteAudioItemAndSceneReferences,
   deleteScene,
   getAllAudioItems,
   getAllScenes,
@@ -77,12 +77,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     },
     removeItem: async (id) => {
       await engine.stopItem(id)
-      await deleteAudioItem(id)
-      const affectedScenes = scenes.filter((scene) => scene.items.some((entry) => entry.audioItemId === id))
-      await Promise.all(affectedScenes.map((scene) => saveScene({
-        ...scene,
-        items: scene.items.filter((entry) => entry.audioItemId !== id),
-      })))
+      await deleteAudioItemAndSceneReferences(id)
       setScenes((current) => current.map((scene) => ({
         ...scene,
         items: scene.items.filter((entry) => entry.audioItemId !== id),

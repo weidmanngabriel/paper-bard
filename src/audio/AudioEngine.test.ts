@@ -41,11 +41,12 @@ class FakeMediaSource {
 }
 
 class FakeAudioContext {
-  state = 'running'
+  state: AudioContextState = 'running'
   currentTime = 0
   destination = {}
   gains: FakeGain[] = []
   mediaSources: FakeMediaSource[] = []
+  failResume = false
   constructor() { createdContexts.push(this) }
   createGain = vi.fn(() => {
     const gain = new FakeGain()
@@ -57,7 +58,10 @@ class FakeAudioContext {
     this.mediaSources.push(source)
     return source
   })
-  resume = vi.fn(async () => { this.state = 'running' })
+  resume = vi.fn(async () => {
+    if (this.failResume) throw new Error('resume failed')
+    this.state = 'running'
+  })
   close = vi.fn(async () => { this.state = 'closed' })
 }
 
@@ -121,6 +125,49 @@ describe('AudioEngine', () => {
     expect(engine.getItemControl(track).volume).toBeCloseTo(0.3)
     await engine.play(track)
     expect(context.gains[2].gain.value).toBeCloseTo(0.3)
+    engine.destroy()
+  })
+
+  it('markiert eine externe Browser-Pause als global fortsetzbar', async () => {
+    const engine = new AudioEngine()
+    engine.setDefaults(1, 0)
+    await engine.play(track)
+
+    createdAudio[0].paused = true
+    document.dispatchEvent(new Event('visibilitychange'))
+
+    expect(engine.getSnapshot()).toMatchObject({
+      globallyPaused: true,
+      instances: [{ audioItemId: track.id, state: 'paused' }],
+    })
+
+    await engine.resumeAll()
+    expect(engine.getSnapshot()).toMatchObject({
+      globallyPaused: false,
+      instances: [{ audioItemId: track.id, state: 'playing' }],
+    })
+    engine.destroy()
+  })
+
+  it('hängt laufende Tracks nach einem fehlgeschlagenen AudioContext-Resume neu ein', async () => {
+    vi.stubGlobal('AudioContext', FakeAudioContext)
+    const engine = new AudioEngine()
+    engine.setDefaults(1, 0)
+    await engine.play(track)
+
+    const firstContext = createdContexts[0]
+    createdAudio[0].currentTime = 4.2
+    firstContext.state = 'suspended'
+    firstContext.failResume = true
+
+    await engine.activate()
+
+    expect(createdContexts).toHaveLength(2)
+    expect(createdContexts[1].mediaSources).toHaveLength(1)
+    expect(createdAudio).toHaveLength(2)
+    expect(createdAudio[1].currentTime).toBeCloseTo(4.2)
+    expect(createdAudio[1].play).toHaveBeenCalled()
+    expect(engine.getSnapshot().instances[0].state).toBe('playing')
     engine.destroy()
   })
 
